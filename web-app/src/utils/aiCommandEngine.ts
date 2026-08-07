@@ -167,19 +167,17 @@ Format your responses using Markdown. Be concise, helpful, and adopt a sleek, sl
     const keyIdx = (currentKeyIndex + attempt) % totalKeys;
     const apiKey = keys[keyIdx];
     const ai = new GoogleGenAI({ apiKey });
-    const modelsToTry = ['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.0-flash-lite', 'gemini-pro-latest'];
 
-    for (const modelName of modelsToTry) {
-      try {
-        const response = await ai.models.generateContent({
-          model: modelName,
-          contents: message,
-          config: {
-            tools: tools as any,
-            systemInstruction: systemInstruction,
-            temperature: 0.2,
-          }
-        });
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-flash-latest',
+        contents: message,
+        config: {
+          tools: tools as any,
+          systemInstruction: systemInstruction,
+          temperature: 0.2,
+        }
+      });
 
         // On success, advance currentKeyIndex so subsequent calls balance the load
         currentKeyIndex = (keyIdx + 1) % totalKeys;
@@ -228,11 +226,17 @@ Format your responses using Markdown. Be concise, helpful, and adopt a sleek, sl
 
         return { text: response.text || "I processed your request, but I didn't have anything to say." };
 
-      } catch (error: any) {
-        lastError = error;
-        console.warn(`[AI Engine] Model ${modelName} with Key index ${keyIdx} failed:`, error?.message || error);
-        // Continue to try next model or next API key
+    } catch (error: any) {
+      lastError = error;
+      console.warn(`[AI Engine] Key index ${keyIdx} failed:`, error?.message || error);
+      const errMsg = error?.message || error?.toString() || '';
+      const isRateLimit = error?.status === 429 || error?.code === 429 || /429|quota|RESOURCE_EXHAUSTED|limit|exceeded|rate/i.test(errMsg);
+      
+      if (isRateLimit && attempt < totalKeys - 1) {
+        console.info(`[AI Engine] Key index ${keyIdx} hit rate limit. Rotating to key index ${(keyIdx + 1) % totalKeys}...`);
+        continue;
       }
+      break;
     }
   }
 

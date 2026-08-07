@@ -61,25 +61,29 @@ Answer the user concisely and helpfully in markdown. User Query: "${message}"`;
   for (let attempt = 0; attempt < totalKeys; attempt++) {
     const keyIdx = (currentKeyIndex + attempt) % totalKeys;
     const apiKey = keys[keyIdx];
-    const modelsToTry = ['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.0-flash-lite', 'gemini-pro-latest'];
 
-    for (const modelName of modelsToTry) {
-      try {
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: modelName });
+    try {
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
 
-        const result = await model.generateContent(contextPrompt);
-        const responseText = result.response.text();
+      const result = await model.generateContent(contextPrompt);
+      const responseText = result.response.text();
 
-        // On success, rotate current index for load balancing
-        currentKeyIndex = (keyIdx + 1) % totalKeys;
+      // On success, rotate current index for load balancing
+      currentKeyIndex = (keyIdx + 1) % totalKeys;
 
-        return { text: responseText };
-      } catch (error: any) {
-        lastError = error;
-        console.warn(`[Native AI Engine] Model ${modelName} with Key index ${keyIdx} failed:`, error?.message || error);
-        // Continue trying next model or next key
+      return { text: responseText };
+    } catch (error: any) {
+      lastError = error;
+      console.warn(`[Native AI Engine] Key index ${keyIdx} failed:`, error?.message || error);
+      const errMsg = error?.message || error?.toString() || '';
+      const isRateLimit = error?.status === 429 || error?.code === 429 || /429|quota|RESOURCE_EXHAUSTED|limit|exceeded|rate/i.test(errMsg);
+
+      if (isRateLimit && attempt < totalKeys - 1) {
+        console.info(`[Native AI Engine] Key index ${keyIdx} hit rate limit. Rotating to key index ${(keyIdx + 1) % totalKeys}...`);
+        continue;
       }
+      break;
     }
   }
 
