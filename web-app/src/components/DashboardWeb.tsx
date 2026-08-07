@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useFinanceStore, formatCurrency, SUPPORTED_CURRENCIES } from '../shared/useFinanceStore';
 import type { ThemeType, Transaction } from '../shared/useFinanceStore';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -31,7 +31,7 @@ export const useThemeStyles = () => {
       accentPink: 'text-[#FF007F]',
       primaryBtn: 'bg-[#00FF88] text-[#000000] hover:shadow-[0_0_20px_rgba(0,255,136,0.5)] font-bold transition-all duration-300 cursor-pointer',
       primaryBtnOutline: 'border border-[#00FF88] text-[#00FF88] hover:bg-[#00FF88]/10 font-bold transition-all duration-300 cursor-pointer',
-      input: 'bg-[#0B0B0F] border border-[#1E1E26] focus:border-[#00FF88] text-white',
+      input: 'bg-[#111118] border border-[#3A3A4A] focus:border-[#00FF88] text-white',
       shadow: 'shadow-[0_4px_20px_rgba(0,0,0,0.8)]',
       gradientBorder: 'hover:border-[#00FF88]/50 transition-all duration-300',
       navActive: 'bg-[#00FF88]/10 text-[#00FF88] border-r-4 border-[#00FF88]',
@@ -181,7 +181,7 @@ export const useThemeStyles = () => {
       accentPink: 'text-[#FF007F]',
       primaryBtn: 'bg-gradient-to-r from-[#FF007F] via-[#B200FF] to-[#00E5FF] text-white font-extrabold uppercase tracking-wider hover:shadow-[0_0_20px_rgba(0,229,255,0.6)] border border-white/10 transition-all duration-300 cursor-pointer',
       primaryBtnOutline: 'border-2 border-[#FF007F] text-[#FF007F] hover:bg-[#FF007F]/15 font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer',
-      input: 'bg-[#0A0516] border border-[#FF007F]/50 focus:border-[#00E5FF] text-[#00E5FF] font-mono',
+      input: 'bg-[#0A0516] border border-[#FF007F]/70 focus:border-[#00E5FF] text-[#00E5FF] font-mono',
       shadow: 'shadow-[0_0_25px_rgba(178,0,255,0.25)]',
       gradientBorder: 'hover:border-[#00E5FF] hover:shadow-[0_0_20px_rgba(255,0,127,0.4)] transition-all duration-300',
       navActive: 'bg-[#FF007F]/15 text-[#00E5FF] border-r-4 border-[#FF007F] shadow-[inset_0_0_10px_rgba(255,0,127,0.3)]',
@@ -552,6 +552,12 @@ export const DashboardWeb: React.FC<{
   ]);
   const [chatInput, setChatInput] = useState('');
   const [aiTyping, setAiTyping] = useState(false);
+  const chatBottomRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom whenever chat updates
+  useEffect(() => {
+    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatHistory, aiTyping]);
 
   const handleSendMessage = async (textToSend?: string) => {
     const messageText = textToSend || chatInput;
@@ -702,7 +708,8 @@ export const DashboardWeb: React.FC<{
       return 0;
     });
 
-  const uniqueCategories = Array.from(new Set(transactions.map(t => t.category)));
+  const PRESET_CATEGORIES = ['Food', 'Entertainment', 'Salary', 'Rent', 'Shopping', 'Utilities', 'Travel', 'Healthcare', 'Transport', 'Education', 'Other'];
+  const uniqueCategories = Array.from(new Set([...PRESET_CATEGORIES, ...transactions.map(t => t.category)])).sort();
 
   const totalBalance = accounts.reduce((acc, curr) => acc + curr.balance, 0);
   const totalIncome = filteredTransactions.filter(t => t.type === 'income').reduce((acc, curr) => acc + curr.amount, 0);
@@ -1216,25 +1223,32 @@ export const DashboardWeb: React.FC<{
                       value={ledgerSearch}
                       onChange={e => setLedgerSearch(e.target.value)}
                       className={`w-full pl-10 pr-4 py-2.5 rounded-xl text-sm ${cStyles.input}`}
+                      style={{ border: '1.5px solid rgba(160,160,180,0.7)' }}
                     />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-                    <select value={ledgerFilterType} onChange={e => setLedgerFilterType(e.target.value)} className={`p-2.5 rounded-xl text-sm ${cStyles.input}`}>
-                      <option value="all">All Types</option>
-                      <option value="income">Income</option>
-                      <option value="expense">Expense</option>
-                    </select>
-                    <select value={ledgerFilterCategory} onChange={e => setLedgerFilterCategory(e.target.value)} className={`p-2.5 rounded-xl text-sm ${cStyles.input}`}>
-                      <option value="all">All Categories</option>
-                      {uniqueCategories.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                    <select value={ledgerSortBy} onChange={e => setLedgerSortBy(e.target.value)} className={`p-2.5 rounded-xl text-sm ${cStyles.input}`}>
-                      <option value="date-newest">Date: Newest</option>
-                      <option value="date-oldest">Date: Oldest</option>
-                      <option value="amount-high">Amount: High to Low</option>
-                      <option value="amount-low">Amount: Low to High</option>
-                    </select>
+                    <div style={{ border: '1.5px solid rgba(160,160,180,0.7)', borderRadius: '0.75rem', overflow: 'hidden' }}>
+                      <select value={ledgerFilterType} onChange={e => setLedgerFilterType(e.target.value)} className={`w-full p-2.5 text-sm font-semibold cursor-pointer outline-none ${cStyles.input}`} style={{ border: 'none', borderRadius: 0 }}>
+                        <option value="all">All Types</option>
+                        <option value="income">Income</option>
+                        <option value="expense">Expense</option>
+                      </select>
+                    </div>
+                    <div style={{ border: '1.5px solid rgba(160,160,180,0.7)', borderRadius: '0.75rem', overflow: 'hidden' }}>
+                      <select value={ledgerFilterCategory} onChange={e => setLedgerFilterCategory(e.target.value)} className={`w-full p-2.5 text-sm font-semibold cursor-pointer outline-none ${cStyles.input}`} style={{ border: 'none', borderRadius: 0 }}>
+                        <option value="all">All Categories</option>
+                        {uniqueCategories.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </div>
+                    <div style={{ border: '1.5px solid rgba(160,160,180,0.7)', borderRadius: '0.75rem', overflow: 'hidden' }}>
+                      <select value={ledgerSortBy} onChange={e => setLedgerSortBy(e.target.value)} className={`w-full p-2.5 text-sm font-semibold cursor-pointer outline-none ${cStyles.input}`} style={{ border: 'none', borderRadius: 0 }}>
+                        <option value="date-newest">Date: Newest</option>
+                        <option value="date-oldest">Date: Oldest</option>
+                        <option value="amount-high">Amount: High to Low</option>
+                        <option value="amount-low">Amount: Low to High</option>
+                      </select>
+                    </div>
                   </div>
 
                   <div className="space-y-3">
@@ -1634,110 +1648,120 @@ export const DashboardWeb: React.FC<{
             )}
 
             {activePage === 'ai' && (
-              <div className="space-y-8">
-                <div className={`p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow} flex flex-col h-[600px] relative overflow-hidden border border-white/5`}>
+              <div className="space-y-6">
+                <div className={`rounded-2xl ${cStyles.cardBg} ${cStyles.shadow} flex flex-col border border-white/5 relative`} style={{ minHeight: '600px', maxHeight: 'calc(100vh - 200px)' }}>
                   {/* Background Decorative Glow */}
-                  <div className="absolute -top-40 -right-40 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
-                  <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl" />
+                  <div className="absolute -top-20 -right-20 w-72 h-72 bg-purple-500/8 rounded-full blur-3xl pointer-events-none" />
+                  <div className="absolute -bottom-20 -left-20 w-72 h-72 bg-emerald-500/8 rounded-full blur-3xl pointer-events-none" />
 
                   {/* Terminal Header */}
-                  <div className="flex items-center justify-between border-b border-gray-800/60 pb-4 mb-4 relative z-10">
+                  <div className={`flex items-center justify-between px-5 py-4 border-b border-gray-800/60 relative z-10 rounded-t-2xl`}>
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center border border-purple-500/30 text-purple-400">
-                        <Bot className="w-6 h-6 animate-pulse" />
+                      <div className="w-9 h-9 rounded-xl bg-purple-500/15 flex items-center justify-center border border-purple-500/30 text-purple-400 shrink-0">
+                        <Bot className="w-5 h-5 animate-pulse" />
                       </div>
                       <div>
-                        <h3 className="font-black text-base">CoinBurst Autonomous AI Advisor</h3>
-                        <span className="text-[10px] text-emerald-400 font-mono tracking-widest uppercase block">Quantum Analysis Active</span>
+                        <h3 className="font-black text-sm">CoinBurst Autonomous AI Advisor</h3>
+                        <span className="text-[10px] text-emerald-400 font-mono tracking-widest uppercase">Quantum Analysis Active</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
-                      <span className="text-[10px] text-gray-400 font-mono">LIVE CONNECTED</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                      <span className="text-[10px] text-gray-400 font-mono">LIVE</span>
                     </div>
                   </div>
 
                   {/* Scrollable Chat Area */}
-                  <div className="flex-1 overflow-y-auto pr-2 space-y-4 mb-4 relative z-10">
+                  <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 relative z-10" style={{ minHeight: '380px' }}>
                     {chatHistory.map((msg, index) => (
-                      <div
-                        key={index}
-                        className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                      >
-                        <div
-                          className={`max-w-[80%] p-4 rounded-2xl text-sm ${
-                            msg.sender === 'user'
-                              ? theme === 'cyberpunk'
-                                ? 'bg-[#FFE600] text-[#12042C] font-mono border border-[#FFE600]'
-                                : 'bg-emerald-500/20 text-white border border-emerald-500/30'
-                              : cStyles.cardAccentBg + ' text-gray-200 border border-white/5'
-                          }`}
-                        >
-                          <div className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1">
-                            {msg.sender === 'user' ? 'USER QUERY' : 'PORTFOLIO INTELLIGENCE'}
+                      <div key={index} className={`flex items-end gap-2.5 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        {/* AI avatar */}
+                        {msg.sender === 'ai' && (
+                          <div className="w-7 h-7 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center shrink-0 mb-1">
+                            <Bot className="w-4 h-4" />
                           </div>
+                        )}
+                        <div className={`max-w-[75%] rounded-2xl text-sm leading-relaxed ${
+                          msg.sender === 'user'
+                            ? theme === 'cyberpunk'
+                              ? 'bg-[#FFE600] text-[#12042C] font-mono border border-[#FFE600] px-4 py-3 rounded-br-sm'
+                              : 'bg-emerald-500/20 text-white border border-emerald-500/30 px-4 py-3 rounded-br-sm'
+                            : `${cStyles.cardAccentBg} text-gray-200 border border-white/8 px-4 py-3 rounded-bl-sm`
+                        }`}>
                           <MarkdownText text={msg.text} />
                         </div>
+                        {/* User avatar */}
+                        {msg.sender === 'user' && (
+                          <div className="w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center shrink-0 mb-1 text-[10px] font-black">
+                            U
+                          </div>
+                        )}
                       </div>
                     ))}
 
                     {aiTyping && (
-                      <div className="flex justify-start">
-                        <div className={`p-4 rounded-2xl text-sm ${cStyles.cardAccentBg} border border-white/5 flex items-center gap-2 text-gray-400`}>
-                          <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400">AI TYPING</span>
+                      <div className="flex items-end gap-2.5 justify-start">
+                        <div className="w-7 h-7 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center shrink-0">
+                          <Bot className="w-4 h-4" />
+                        </div>
+                        <div className={`px-4 py-3 rounded-2xl rounded-bl-sm text-sm ${cStyles.cardAccentBg} border border-white/8 flex items-center gap-2 text-gray-400`}>
+                          <span className="text-[9px] font-bold uppercase tracking-widest">Thinking</span>
                           <div className="flex gap-1">
-                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: '300ms' }} />
                           </div>
                         </div>
                       </div>
                     )}
+                    {/* Auto-scroll anchor */}
+                    <div ref={chatBottomRef} />
                   </div>
 
-                  {/* Quick Analysis Pills */}
-                  <div className="flex flex-wrap gap-2 mb-4 relative z-10">
-                    {[
-                      { label: '🔍 Analyze Spending', query: 'Analyze my expenses' },
-                      { label: '⚠️ Budget Limits', query: 'Am I over budget?' },
-                      { label: '📈 Savings Ratio', query: 'How are my savings doing?' },
-                      { label: '💼 Vault Holdings', query: 'Summarize my accounts' }
-                    ].map((pill, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => handleSendMessage(pill.query)}
-                        disabled={aiTyping}
-                        className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-300 cursor-pointer disabled:opacity-50 ${cStyles.walletBtnUnselected}`}
-                      >
-                        {pill.label}
-                      </button>
-                    ))}
-                  </div>
+                  {/* Bottom area: quick pills + input */}
+                  <div className="px-5 pb-5 pt-3 border-t border-gray-800/40 space-y-3 relative z-10">
+                    {/* Quick Analysis Pills */}
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { label: '🔍 Analyze Spending', query: 'Analyze my expenses' },
+                        { label: '⚠️ Budget Limits', query: 'Am I over budget?' },
+                        { label: '📈 Savings Ratio', query: 'How are my savings doing?' },
+                        { label: '💼 Vault Holdings', query: 'Summarize my accounts' }
+                      ].map((pill, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => handleSendMessage(pill.query)}
+                          disabled={aiTyping}
+                          className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 cursor-pointer disabled:opacity-50 ${cStyles.walletBtnUnselected}`}
+                        >
+                          {pill.label}
+                        </button>
+                      ))}
+                    </div>
 
-                  {/* Chat input form */}
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      handleSendMessage();
-                    }}
-                    className="flex gap-3 relative z-10"
-                  >
-                    <input
-                      type="text"
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      disabled={aiTyping}
-                      placeholder="Ask the advisor... (e.g. 'how are my budgets?', 'give me savings tips')"
-                      className={`flex-1 px-4 py-3.5 rounded-xl focus:outline-none transition-all duration-300 disabled:opacity-50 ${cStyles.input}`}
-                    />
-                    <button
-                      type="submit"
-                      disabled={aiTyping || !chatInput.trim()}
-                      className={`px-6 rounded-xl font-black text-xs uppercase tracking-widest transition-all duration-300 cursor-pointer disabled:opacity-50 ${cStyles.primaryBtn}`}
+                    {/* Chat input form */}
+                    <form
+                      onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}
+                      className="flex gap-2 items-center"
                     >
-                      Transmit
-                    </button>
-                  </form>
+                      <input
+                        type="text"
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        disabled={aiTyping}
+                        placeholder="Ask the advisor... (e.g. 'how are my budgets?', 'give me savings tips')"
+                        className={`flex-1 px-4 py-3 rounded-xl text-sm focus:outline-none transition-all duration-300 disabled:opacity-50 ${cStyles.input}`}
+                        style={{ border: '1.5px solid rgba(160,160,180,0.3)' }}
+                      />
+                      <button
+                        type="submit"
+                        disabled={aiTyping || !chatInput.trim()}
+                        className={`px-5 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all duration-300 cursor-pointer disabled:opacity-40 shrink-0 ${cStyles.primaryBtn}`}
+                      >
+                        Send
+                      </button>
+                    </form>
+                  </div>
                 </div>
               </div>
             )}
