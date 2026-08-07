@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { database } from './firebase';
-import { ref, set as firebaseSet, get as firebaseGet, update as firebaseUpdate } from 'firebase/database';
+import { ref, set as firebaseSet, get as firebaseGet, update as firebaseUpdate, onValue } from 'firebase/database';
 import { triggerHaptic, triggerHapticNotification, showNativeToast } from './nativeBridge';
 import { sanitizeText, validateAmount, sanitizeCategory, hashPin } from './securityUtils';
 
@@ -205,6 +205,8 @@ const saveStateToFirebase = (
   firebaseUpdate(dbRef, payload)
     .catch(err => console.error('[CoinBurst] Firebase sync failed:', err));
 };
+
+let activeFirebaseUnsubscribe: (() => void) | null = null;
 
 export const useFinanceStore = create<FinanceState>()(
   persist(
@@ -579,33 +581,43 @@ export const useFinanceStore = create<FinanceState>()(
     }
   },
       setUser: async (user) => {
+        if (activeFirebaseUnsubscribe) {
+          activeFirebaseUnsubscribe();
+          activeFirebaseUnsubscribe = null;
+        }
+
         if (user) {
           set({ user, loading: true });
           const dbRef = ref(database, `users/${user.uid}`);
           try {
-            const snapshot = await firebaseGet(dbRef);
-            if (snapshot.exists()) {
-              const data = snapshot.val();
-              const loadedUser = { ...user };
-              if (data.profile) {
-                loadedUser.displayName = data.profile.displayName || user.displayName;
-                loadedUser.photoURL = data.profile.photoURL || user.photoURL;
-              }
-              const loadedAccounts = fromFirebaseArray<Account>(data.accounts);
-              const loadedTransactions = fromFirebaseArray<Transaction>(data.transactions);
-              const rawBudgets = fromFirebaseArray<Budget>(data.budgets);
-              const loadedBudgets = recalculateBudgetSpent(rawBudgets, loadedTransactions);
+            // Real-time listener for instant cross-device updates (Mobile <-> Web)
+            activeFirebaseUnsubscribe = onValue(dbRef, (snapshot) => {
+              if (snapshot.exists()) {
+                const data = snapshot.val();
+                const loadedAccounts = fromFirebaseArray<Account>(data.accounts);
+                const loadedTransactions = fromFirebaseArray<Transaction>(data.transactions);
+                const rawBudgets = fromFirebaseArray<Budget>(data.budgets);
+                const loadedBudgets = recalculateBudgetSpent(rawBudgets, loadedTransactions);
 
-              set({
-                user: loadedUser,
-                accounts: loadedAccounts,
-                transactions: loadedTransactions,
-                budgets: loadedBudgets,
-                theme: (data.theme as ThemeType) || 'dark',
-                currency: data.currency || 'INR',
-              });
-              console.log('[CoinBurst] Loaded user data from Firebase.');
-            } else {
+                set((state) => ({
+                  user: state.user ? {
+                    ...state.user,
+                    displayName: data.profile?.displayName || state.user.displayName,
+                    photoURL: data.profile?.photoURL || state.user.photoURL,
+                  } : null,
+                  accounts: loadedAccounts,
+                  transactions: loadedTransactions,
+                  budgets: loadedBudgets,
+                  theme: (data.theme as ThemeType) || state.theme,
+                  currency: data.currency || state.currency,
+                  loading: false,
+                }));
+                console.log('[CoinBurst] Live cross-platform real-time sync received from Firebase.');
+              }
+            });
+
+            const snapshot = await firebaseGet(dbRef);
+            if (!snapshot.exists()) {
               const freshProfile = {
                 displayName: user.displayName,
                 photoURL: user.photoURL || '',
@@ -616,18 +628,9 @@ export const useFinanceStore = create<FinanceState>()(
                 currency: 'INR',
                 profile: freshProfile,
               });
-              set({
-                user,
-                accounts: [],
-                transactions: [],
-                budgets: [],
-                theme: 'dark',
-                currency: 'INR',
-              });
-              console.log('[CoinBurst] New user record created in Firebase.');
             }
           } catch (error) {
-            console.error('[CoinBurst] Firebase load failed:', error);
+            console.error('[CoinBurst] Firebase load/subscription failed:', error);
           } finally {
             set({ loading: false });
           }

@@ -124,26 +124,27 @@ const fromFirebaseArray = <T>(val: unknown): T[] => {
 };
 
 /**
- * 3. Fetch Financial Data from Firebase and Hydrate Mobile Zustand Store
+ * 3. Subscribe to Financial Data in Firebase to Hydrate Mobile Store Live
  */
 export const syncFirebaseToMobileStore = async (uid: string) => {
   try {
+    // Listen live in real-time to any modifications from Web or Mobile
+    database().ref(`/users/${uid}`).on('value', (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        useFinanceStore.setState({
+          accounts: fromFirebaseArray(data.accounts),
+          transactions: fromFirebaseArray(data.transactions),
+          budgets: fromFirebaseArray(data.budgets),
+          theme: data.theme || 'dark',
+          currency: data.currency || 'INR',
+        });
+        console.log('[CoinBurst Mobile] Live ledger update received from Firebase.');
+      }
+    });
+
     const snapshot = await database().ref(`/users/${uid}`).once('value');
-    if (snapshot.exists()) {
-      const data = snapshot.val();
-
-      // Update local mobile store with remote ledger values
-      useFinanceStore.setState({
-        accounts: fromFirebaseArray(data.accounts),
-        transactions: fromFirebaseArray(data.transactions),
-        budgets: fromFirebaseArray(data.budgets),
-        theme: data.theme || 'dark',
-        currency: data.currency || 'INR',
-      });
-
-      console.log('[CoinBurst Mobile] Ledger successfully synced from Firebase.');
-    } else {
-      // First-time login — write initial record (no empty arrays — Firebase drops them)
+    if (!snapshot.exists()) {
       const { theme, currency } = useFinanceStore.getState();
       await database().ref(`/users/${uid}`).set({
         theme,
