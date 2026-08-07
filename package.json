@@ -1,0 +1,11 @@
+{
+  "name": "coinburst-workspace",
+  "version": "2.5.0",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix web-app run dev",
+    "build": "npm --prefix web-app run build",
+    "dev:native": "npm --prefix native-app run start",
+    "start": "npm --prefix web-app run dev"
+  }
+}
