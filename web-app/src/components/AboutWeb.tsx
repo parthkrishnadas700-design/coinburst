@@ -3,22 +3,58 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Code, 
   SlidersHorizontal, ArrowUpRight, PiggyBank, Bot, 
-  Settings, CheckCircle2, Sparkles, BookOpen, Link, Check, Upload, FileVideo
+  Settings, CheckCircle2, Sparkles, BookOpen, Link, Check, Upload, FileVideo, Plus, Trash2, PlayCircle, Film
 } from 'lucide-react';
 import { useThemeStyles } from './DashboardWeb';
+
+export type VideoItem = {
+  id: string;
+  title: string;
+  url: string;
+};
 
 export const AboutWeb: React.FC = () => {
   const cStyles = useThemeStyles();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeGuideTab, setActiveGuideTab] = useState<number>(0);
-  const [videoUrls, setVideoUrls] = useState<Record<number, string>>({
-    0: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-    1: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-    2: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
-    3: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
-    4: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutback2012.mp4',
+  const [activeVideoIndexMap, setActiveVideoIndexMap] = useState<Record<number, number>>({
+    0: 0, 1: 0, 2: 0, 3: 0, 4: 0
   });
-  const [editingVideoIndex, setEditingVideoIndex] = useState<number | null>(null);
+
+  const [playlists, setPlaylists] = useState<Record<number, VideoItem[]>>({
+    0: [
+      { id: '1-1', title: 'Wallet Seekbar Overview', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' },
+      { id: '1-2', title: 'Adding Funds Walkthrough', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4' },
+      { id: '1-3', title: 'Preset Top-Up Chips Demo', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4' },
+      { id: '1-4', title: 'Local Public Video Sample', url: '/videos/video1.mp4' },
+    ],
+    1: [
+      { id: '2-1', title: 'Logging Ledger Transactions', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4' },
+      { id: '2-2', title: 'Income vs Expense Allocations', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4' },
+      { id: '2-3', title: 'Filtering & Live Search', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutback2012.mp4' },
+      { id: '2-4', title: 'Local Public Video Sample', url: '/videos/video2.mp4' },
+    ],
+    2: [
+      { id: '3-1', title: 'Setting Category Budgets', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4' },
+      { id: '3-2', title: 'Liquid Budget Progress Bar', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' },
+      { id: '3-3', title: 'Overspending Sentinel Warnings', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4' },
+      { id: '3-4', title: 'Local Public Video Sample', url: '/videos/video3.mp4' },
+    ],
+    3: [
+      { id: '4-1', title: 'AI Advisor Voice Commands', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4' },
+      { id: '4-2', title: 'Natural Language Transaction Creation', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutback2012.mp4' },
+      { id: '4-3', title: 'AI Financial Analysis', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4' },
+      { id: '4-4', title: 'Local Public Video Sample', url: '/videos/video4.mp4' },
+    ],
+    4: [
+      { id: '5-1', title: 'Multi-Currency Selector Demo', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutback2012.mp4' },
+      { id: '5-2', title: 'Theme Preset Switching', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' },
+      { id: '5-3', title: 'Firebase Realtime Cloud Sync', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4' }
+    ],
+  });
+
+  const [editingVideo, setEditingVideo] = useState<boolean>(false);
+  const [inputTitle, setInputTitle] = useState<string>('');
   const [inputUrl, setInputUrl] = useState<string>('');
 
   const guideSteps = [
@@ -107,28 +143,71 @@ export const AboutWeb: React.FC = () => {
   ];
 
   const currentStep = guideSteps[activeGuideTab];
-  const currentVideoUrl = videoUrls[activeGuideTab] || '';
+  const currentPlaylist = playlists[activeGuideTab] || [];
+  const selectedVideoIndex = activeVideoIndexMap[activeGuideTab] || 0;
+  const currentVideo = currentPlaylist[selectedVideoIndex] || currentPlaylist[0];
 
-  const handleSaveVideoUrl = () => {
+  const handleAddVideoUrl = () => {
     if (inputUrl.trim()) {
-      setVideoUrls(prev => ({ ...prev, [activeGuideTab]: inputUrl.trim() }));
+      const newVideo: VideoItem = {
+        id: `v-${Date.now()}`,
+        title: inputTitle.trim() || `Video ${currentPlaylist.length + 1}`,
+        url: inputUrl.trim(),
+      };
+      setPlaylists(prev => ({
+        ...prev,
+        [activeGuideTab]: [...(prev[activeGuideTab] || []), newVideo]
+      }));
+      setActiveVideoIndexMap(prev => ({
+        ...prev,
+        [activeGuideTab]: (prev[activeGuideTab] || 0) + 1
+      }));
     }
-    setEditingVideoIndex(null);
+    setEditingVideo(false);
+    setInputTitle('');
     setInputUrl('');
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const localBlobUrl = URL.createObjectURL(file);
-      setVideoUrls(prev => ({ ...prev, [activeGuideTab]: localBlobUrl }));
-      setEditingVideoIndex(null);
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      const newVideos: VideoItem[] = files.map((file, idx) => ({
+        id: `v-file-${Date.now()}-${idx}`,
+        title: file.name.replace(/\.[^/.]+$/, ''),
+        url: URL.createObjectURL(file),
+      }));
+
+      setPlaylists(prev => {
+        const existing = prev[activeGuideTab] || [];
+        return {
+          ...prev,
+          [activeGuideTab]: [...existing, ...newVideos]
+        };
+      });
+
+      setActiveVideoIndexMap(prev => ({
+        ...prev,
+        [activeGuideTab]: (prev[activeGuideTab] || 0) + newVideos.length
+      }));
+      setEditingVideo(false);
     }
   };
 
-  const renderVideoPlayer = (url: string, title: string) => {
-    if (!url) return null;
+  const handleDeleteVideo = (videoIndex: number) => {
+    setPlaylists(prev => {
+      const updated = (prev[activeGuideTab] || []).filter((_, idx) => idx !== videoIndex);
+      return { ...prev, [activeGuideTab]: updated };
+    });
+    setActiveVideoIndexMap(prev => ({
+      ...prev,
+      [activeGuideTab]: Math.max(0, (prev[activeGuideTab] || 0) - 1)
+    }));
+  };
 
+  const renderVideoPlayer = (video?: VideoItem, defaultTitle?: string) => {
+    if (!video || !video.url) return null;
+
+    const url = video.url;
     // Check YouTube link
     if (url.includes('youtube.com') || url.includes('youtu.be')) {
       let videoId = '';
@@ -140,7 +219,7 @@ export const AboutWeb: React.FC = () => {
       return (
         <iframe
           src={`https://www.youtube.com/embed/${videoId}?autoplay=0`}
-          title={title}
+          title={video.title || defaultTitle || 'Guide Video'}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
           className="w-full aspect-video rounded-2xl border border-gray-800 shadow-2xl bg-black"
@@ -174,6 +253,7 @@ export const AboutWeb: React.FC = () => {
         type="file"
         ref={fileInputRef}
         accept="video/*"
+        multiple
         onChange={handleFileUpload}
         className="hidden"
       />
@@ -194,17 +274,17 @@ export const AboutWeb: React.FC = () => {
               <Sparkles className="w-3 h-3" /> Application Interactive Guide
             </span>
             <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white mt-0.5">
-              CoinBurst Master Guide & Video Tutorials
+              CoinBurst Master Guide & Multi-Video Gallery
             </h2>
             <p className={`${cStyles.textMuted} text-xs mt-1 max-w-lg`}>
-              Complete step-by-step manual and interactive video demonstrations. Upload local video files or paste video links.
+              Watch step-by-step video demonstrations or add your own videos (2 to 4+ video files supported per section).
             </p>
           </div>
         </div>
 
         <div className="shrink-0 relative z-10 flex flex-col items-end gap-2">
           <span className="px-4 py-2 rounded-xl text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-            Version 2.5 • Direct Video Upload
+            Version 2.5 • Multi-Video Playlist
           </span>
         </div>
       </div>
@@ -214,12 +294,13 @@ export const AboutWeb: React.FC = () => {
         {guideSteps.map((step, idx) => {
           const Icon = step.icon;
           const isActive = activeGuideTab === idx;
+          const videoCount = playlists[idx]?.length || 0;
           return (
             <button
               key={step.id}
               onClick={() => {
                 setActiveGuideTab(idx);
-                setEditingVideoIndex(null);
+                setEditingVideo(false);
               }}
               className={`px-4 py-3 rounded-2xl text-xs font-bold transition-all duration-300 border flex items-center gap-2.5 cursor-pointer whitespace-nowrap ${
                 isActive
@@ -229,6 +310,9 @@ export const AboutWeb: React.FC = () => {
             >
               <Icon className={`w-4 h-4 ${isActive ? step.accentColor : 'text-gray-400'}`} />
               <span>{step.title.split('.')[1]}</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-gray-300 font-mono">
+                {videoCount} 🎬
+              </span>
             </button>
           );
         })}
@@ -268,70 +352,130 @@ export const AboutWeb: React.FC = () => {
                 className="px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-black shadow-lg transition-all flex items-center gap-2 cursor-pointer font-black"
               >
                 <Upload className="w-4 h-4" />
-                <span>📁 Select Video from PC</span>
+                <span>📁 Upload Videos (PC)</span>
               </button>
 
               <button
-                onClick={() => {
-                  setEditingVideoIndex(editingVideoIndex === activeGuideTab ? null : activeGuideTab);
-                  setInputUrl(currentVideoUrl);
-                }}
+                onClick={() => setEditingVideo(!editingVideo)}
                 className="px-3.5 py-2 rounded-xl text-xs font-bold bg-white/5 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all flex items-center gap-2 cursor-pointer"
               >
-                <Link className="w-4 h-4" />
-                <span>{editingVideoIndex === activeGuideTab ? 'Cancel Edit' : '🔗 Paste URL'}</span>
+                <Plus className="w-4 h-4" />
+                <span>{editingVideo ? 'Cancel' : '➕ Add Video Link'}</span>
               </button>
             </div>
           </div>
 
-          {/* Edit Video URL Bar */}
-          {editingVideoIndex === activeGuideTab && (
+          {/* Add Video URL Form */}
+          {editingVideo && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               className="p-4 rounded-2xl bg-emerald-950/30 border border-emerald-500/30 space-y-3"
             >
               <label className="text-xs font-bold text-emerald-300 flex items-center gap-2">
-                <Link className="w-3.5 h-3.5" /> Paste Video Link (MP4 Direct URL or YouTube Watch Link):
+                <Link className="w-3.5 h-3.5" /> Add Video URL (YouTube or Direct MP4):
               </label>
-              <div className="flex gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <input
+                  type="text"
+                  value={inputTitle}
+                  onChange={(e) => setInputTitle(e.target.value)}
+                  placeholder="Video Title (e.g. Video 2: Deep Dive)"
+                  className="px-4 py-2 rounded-xl bg-black/60 border border-gray-700 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-400"
+                />
                 <input
                   type="text"
                   value={inputUrl}
                   onChange={(e) => setInputUrl(e.target.value)}
-                  placeholder="e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ or https://domain.com/video.mp4"
-                  className="flex-1 px-4 py-2 rounded-xl bg-black/60 border border-gray-700 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-400"
+                  placeholder="Video Link (e.g. https://... or /videos/sample.mp4)"
+                  className="sm:col-span-2 px-4 py-2 rounded-xl bg-black/60 border border-gray-700 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-400"
                 />
+              </div>
+              <div className="flex justify-end">
                 <button
-                  onClick={handleSaveVideoUrl}
-                  className="px-4 py-2 rounded-xl text-xs font-black bg-emerald-500 hover:bg-emerald-400 text-black flex items-center gap-1.5 cursor-pointer shadow-lg"
+                  onClick={handleAddVideoUrl}
+                  className="px-5 py-2 rounded-xl text-xs font-black bg-emerald-500 hover:bg-emerald-400 text-black flex items-center gap-1.5 cursor-pointer shadow-lg"
                 >
-                  <Check className="w-4 h-4" /> Save Video
+                  <Check className="w-4 h-4" /> Add Video to Playlist
                 </button>
               </div>
             </motion.div>
           )}
 
-          {/* Video Player Box */}
+          {/* Main Video Canvas */}
           <div className="relative rounded-2xl overflow-hidden border border-gray-800 bg-black/80 shadow-2xl group">
             {/* Video Canvas Header Bar */}
             <div className="px-4 py-2.5 bg-black/80 border-b border-gray-800 flex items-center justify-between text-xs text-gray-400 font-mono">
               <span className="flex items-center gap-2 text-emerald-400 font-bold">
-                <FileVideo className="w-4 h-4" /> Direct Video Stream • {currentStep.videoSimText}
+                <FileVideo className="w-4 h-4" /> Now Playing: {currentVideo?.title || currentStep.videoSimText}
               </span>
-              <span className="text-[11px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">
-                Active Player
+              <span className="text-[11px] bg-emerald-500/20 text-emerald-300 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
+                Track {selectedVideoIndex + 1} of {currentPlaylist.length}
               </span>
             </div>
 
-            {/* Video Player Element */}
+            {/* Video Player Display */}
             <div className="p-2 sm:p-4 bg-black">
-              {renderVideoPlayer(currentVideoUrl, currentStep.title)}
+              {renderVideoPlayer(currentVideo, currentStep.title)}
+            </div>
+          </div>
+
+          {/* Interactive Playlist Carousel / Gallery */}
+          <div className="space-y-3 border-t border-gray-800/60 pt-6">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-black uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+                <Film className="w-4 h-4" /> Section Video Playlist ({currentPlaylist.length} Videos Available):
+              </h4>
+              <span className="text-[11px] text-gray-400">Click any video card below to play</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+              {currentPlaylist.map((video, idx) => {
+                const isSelected = selectedVideoIndex === idx;
+                return (
+                  <div
+                    key={video.id}
+                    onClick={() => setActiveVideoIndexMap(prev => ({ ...prev, [activeGuideTab]: idx }))}
+                    className={`p-3 rounded-2xl border transition-all cursor-pointer relative group flex flex-col justify-between ${
+                      isSelected
+                        ? 'bg-gradient-to-tr from-emerald-950/60 via-gray-900 to-emerald-950/40 border-emerald-400 shadow-xl shadow-emerald-500/10 scale-102'
+                        : 'bg-white/5 border-gray-800 hover:border-gray-700 hover:bg-white/10'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <PlayCircle className={`w-5 h-5 shrink-0 ${isSelected ? 'text-emerald-400 animate-pulse' : 'text-gray-400'}`} />
+                        <span className="text-xs font-bold text-white line-clamp-1">
+                          {idx + 1}. {video.title}
+                        </span>
+                      </div>
+                      
+                      {currentPlaylist.length > 1 && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteVideo(idx);
+                          }}
+                          className="text-gray-500 hover:text-red-400 p-1 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                          title="Remove video"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-between text-[10px] text-gray-400 border-t border-gray-800/60 pt-2 font-mono">
+                      <span>{video.url.includes('youtube') ? 'YouTube' : 'Video File'}</span>
+                      {isSelected && <span className="text-emerald-400 font-bold">● Active</span>}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
           {/* Step-by-Step Instructions */}
-          <div className="space-y-4">
+          <div className="space-y-4 border-t border-gray-800/60 pt-6">
             <h4 className="text-sm font-black uppercase tracking-wider text-gray-300 flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Step-by-Step Execution Guide:
             </h4>
