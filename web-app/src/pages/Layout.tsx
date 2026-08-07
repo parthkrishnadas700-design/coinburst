@@ -3,17 +3,28 @@ import { useFinanceStore } from '../shared/useFinanceStore';
 import { signOutUser } from "../shared/firebase";
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { 
-  BarChart3, ArrowUpRight, PiggyBank, Bot, Settings, Info, LogOut 
+  BarChart3, ArrowUpRight, PiggyBank, Bot, Settings, Info, LogOut, RefreshCw
 } from 'lucide-react';
 import { useThemeStyles } from '../components/DashboardWeb'; // temporarily importing styles
 
 export const Layout: React.FC = () => {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const theme = useFinanceStore(state => state.theme);
   const user = useFinanceStore(state => state.user);
+  const syncWithFirebase = useFinanceStore(state => state.syncWithFirebase);
+  const loading = useFinanceStore(state => state.loading);
   const cStyles = useThemeStyles();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const handleSidebarSync = async () => {
+    if (syncWithFirebase) {
+      setIsSyncing(true);
+      await syncWithFirebase();
+      setTimeout(() => setIsSyncing(false), 800);
+    }
+  };
 
   const navItems = [
     { id: '/', label: 'Dashboard', icon: BarChart3 },
@@ -102,9 +113,17 @@ export const Layout: React.FC = () => {
                 <p className="text-[10px] text-gray-400 truncate">{user.email}</p>
               </div>
               <button
+                onClick={handleSidebarSync}
+                disabled={isSyncing || loading}
+                title="Sync Full Data with Firebase"
+                className="text-gray-400 hover:text-emerald-400 transition-colors cursor-pointer p-1.5 rounded-lg hover:bg-emerald-500/10 disabled:opacity-50"
+              >
+                <RefreshCw className={`w-4 h-4 ${isSyncing || loading ? 'animate-spin text-emerald-400' : ''}`} />
+              </button>
+              <button
                 onClick={signOutUser}
                 title="Sign Out"
-                className="text-gray-400 hover:text-red-400 transition-colors cursor-pointer p-1 rounded-lg hover:bg-red-500/10"
+                className="text-gray-400 hover:text-red-400 transition-colors cursor-pointer p-1.5 rounded-lg hover:bg-red-500/10"
               >
                 <LogOut className="w-4 h-4" />
               </button>

@@ -128,6 +128,7 @@ interface FinanceState {
   allocateBudgetAmount?: (budgetId: string, amount: number) => void;
   exportData?: () => string;
   importData?: (jsonStr: string) => void;
+  syncWithFirebase?: () => Promise<void>;
 }
 
 const getCurrentMonthString = (dateStr?: string) => {
@@ -475,6 +476,50 @@ export const useFinanceStore = create<FinanceState>()(
           theme: data.theme ?? state.theme,
           currency: data.currency ?? state.currency,
         }));
+      },
+      syncWithFirebase: async () => {
+        const { user, accounts, transactions, budgets, theme, currency } = get();
+        if (!user) {
+          showNativeToast('Please sign in to sync with Firebase');
+          return;
+        }
+        set({ loading: true });
+        try {
+          const dbRef = ref(database, `users/${user.uid}`);
+          const snapshot = await firebaseGet(dbRef);
+          if (snapshot.exists()) {
+            const data = snapshot.val();
+            const loadedAccounts = fromFirebaseArray<Account>(data.accounts);
+            const loadedTransactions = fromFirebaseArray<Transaction>(data.transactions);
+            const rawBudgets = fromFirebaseArray<Budget>(data.budgets);
+            const loadedBudgets = recalculateBudgetSpent(rawBudgets, loadedTransactions);
+
+            set({
+              accounts: loadedAccounts.length > 0 ? loadedAccounts : accounts,
+              transactions: loadedTransactions.length > 0 ? loadedTransactions : transactions,
+              budgets: loadedBudgets.length > 0 ? loadedBudgets : budgets,
+              theme: (data.theme as ThemeType) || theme,
+              currency: data.currency || currency,
+            });
+          }
+          const currentStore = get();
+          saveStateToFirebase(
+            user.uid,
+            currentStore.accounts,
+            currentStore.transactions,
+            currentStore.budgets,
+            currentStore.theme,
+            currentStore.currency
+          );
+          triggerHapticNotification('success');
+          showNativeToast('Synced with Firebase!');
+        } catch (error) {
+          console.error('[CoinBurst] Firebase sync failed:', error);
+          triggerHapticNotification('error');
+          showNativeToast('Firebase sync error');
+        } finally {
+          set({ loading: false });
+        }
       },
       // Export current finance data as JSON string
       exportData: () => {

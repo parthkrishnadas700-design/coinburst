@@ -9,7 +9,7 @@ import {
 import { 
   Plus, Trash2, ArrowUpRight, ArrowDownRight, Search, ChevronDown, 
   TrendingUp, PiggyBank, Bot, Download, Sparkles, Pencil,
-  Shield, Lock, Upload, Database
+  Shield, Lock, Upload, Database, RefreshCw
 } from 'lucide-react';
 import { generateAIResponse } from '../utils/aiCommandEngine';
 import { AboutWeb } from './AboutWeb';
@@ -473,9 +473,12 @@ export const DashboardWeb: React.FC<{
   const lockApp = useFinanceStore((state) => state.lockApp);
   const exportData = useFinanceStore((state) => state.exportData);
   const importData = useFinanceStore((state) => state.importData);
+  const syncWithFirebase = useFinanceStore((state) => state.syncWithFirebase);
+  const loading = useFinanceStore((state) => state.loading);
 
   const [newPinInput, setNewPinInput] = useState('');
   const [backupMessage, setBackupMessage] = useState('');
+  const [isManualSyncing, setIsManualSyncing] = useState(false);
 
   // Profile editing
   const [editName, setEditName] = useState('');
@@ -1426,8 +1429,28 @@ export const DashboardWeb: React.FC<{
 
                 {/* 1. Profile Settings Panel */}
                 <div className={`p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow}`}>
-                  <h3 className="text-lg font-black mb-1">User Profile Settings</h3>
-                  <p className="text-xs text-gray-400 mb-6">Changes are saved directly to Firebase — visible instantly across all devices.</p>
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                    <div>
+                      <h3 className="text-lg font-black tracking-wide">User Profile Settings</h3>
+                      <p className="text-xs text-gray-400 mt-0.5">Changes are saved directly to Firebase — visible instantly across all devices.</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (syncWithFirebase) {
+                          setIsManualSyncing(true);
+                          await syncWithFirebase();
+                          setTimeout(() => setIsManualSyncing(false), 800);
+                        }
+                      }}
+                      disabled={isManualSyncing || loading}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold ${cStyles.primaryBtnOutline} disabled:opacity-50 shrink-0`}
+                      title="Force full bidirectional synchronization with Firebase"
+                    >
+                      <RefreshCw className={`w-4 h-4 ${isManualSyncing || loading ? 'animate-spin text-emerald-400' : ''}`} />
+                      <span>{isManualSyncing || loading ? 'Syncing...' : 'Sync Full Data'}</span>
+                    </button>
+                  </div>
                   <form onSubmit={handleSaveProfile} className="space-y-6 max-w-xl">
 
                     {/* Avatar section */}
