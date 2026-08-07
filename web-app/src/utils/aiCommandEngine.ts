@@ -167,83 +167,78 @@ Format your responses using Markdown. Be concise, helpful, and adopt a sleek, sl
     const keyIdx = (currentKeyIndex + attempt) % totalKeys;
     const apiKey = keys[keyIdx];
     const ai = new GoogleGenAI({ apiKey });
+    const modelsToTry = ['gemini-2.0-flash', 'gemini-1.5-flash'];
 
-    try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: message,
-        config: {
-          tools: tools as any,
-          systemInstruction: systemInstruction,
-          temperature: 0.2,
-        }
-      });
-
-      // On success, advance currentKeyIndex so subsequent calls balance the load
-      currentKeyIndex = (keyIdx + 1) % totalKeys;
-
-      if (response.functionCalls && response.functionCalls.length > 0) {
-        const call = response.functionCalls[0];
-        const args = call.args as Record<string, any>;
-
-        let action: (() => void) | undefined = undefined;
-        let replyText = response.text || '';
-
-        if (call.name === 'add_transaction') {
-          const targetAccount = args.accountId ? state.accounts.find(a => a.id === args.accountId) : state.accounts[0];
-          if (!targetAccount) {
-            return { text: `⚠️ You need at least one account to log a transaction. Please create one first.` };
+    for (const modelName of modelsToTry) {
+      try {
+        const response = await ai.models.generateContent({
+          model: modelName,
+          contents: message,
+          config: {
+            tools: tools as any,
+            systemInstruction: systemInstruction,
+            temperature: 0.2,
           }
-          
-          const newTx = {
-            accountId: targetAccount.id,
-            type: args.type,
-            category: args.category,
-            amount: args.amount,
-            description: args.description,
-            date: new Date().toISOString(),
-          };
-          
-          action = () => store.addTransaction(newTx);
-          if (!replyText) replyText = `✅ Logged ${args.type} of **${formatAmount(args.amount, currency)}** for ${args.category} in ${targetAccount.name}.`;
-        } 
-        else if (call.name === 'create_account') {
-          const colors = ['#10B981', '#6366F1', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
-          const color = colors[state.accounts.length % colors.length];
-          action = () => store.addAccount({ name: args.name, type: args.type, balance: args.balance, color });
-          if (!replyText) replyText = `✅ Vault Node **${args.name}** established with ${formatAmount(args.balance, currency)}.`;
-        }
-        else if (call.name === 'set_budget') {
-          const now = new Date();
-          const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-          action = () => store.addBudget({ category: args.category, limit: args.limit, month });
-          if (!replyText) replyText = `✅ Sentinel protocol activated: **${args.category}** limited to ${formatAmount(args.limit, currency)}.`;
-        }
-        else if (call.name === 'change_theme') {
-          action = () => store.setTheme(args.theme);
-          if (!replyText) replyText = `🎨 Aesthetic synchronized to **${args.theme}**.`;
-        }
-        else if (call.name === 'navigate_page') {
-          action = () => store.onNavigate(args.page);
-          if (!replyText) replyText = `📍 Routing interface to **${args.page}**...`;
+        });
+
+        // On success, advance currentKeyIndex so subsequent calls balance the load
+        currentKeyIndex = (keyIdx + 1) % totalKeys;
+
+        if (response.functionCalls && response.functionCalls.length > 0) {
+          const call = response.functionCalls[0];
+          const args = call.args as Record<string, any>;
+
+          let action: (() => void) | undefined = undefined;
+          let replyText = response.text || '';
+
+          if (call.name === 'add_transaction') {
+            const targetAccount = state.accounts.find(a => a.id === args.accountId) || state.accounts[0];
+            if (!targetAccount) return { text: "⚠️ Transaction failed: No valid account found." };
+            action = () => store.addTransaction({
+              accountId: targetAccount.id,
+              type: args.type,
+              amount: args.amount,
+              category: args.category,
+              description: args.description,
+              date: new Date().toISOString()
+            });
+            if (!replyText) replyText = `✅ Recorded **${args.type.toUpperCase()}** of ${formatAmount(args.amount, currency)} (${args.category}) into **${targetAccount.name}**.`;
+          }
+          else if (call.name === 'create_account') {
+            action = () => store.addAccount({ name: args.name, type: args.type, balance: args.balance || 0 });
+            if (!replyText) replyText = `✅ Vault Node **${args.name}** established with ${formatAmount(args.balance, currency)}.`;
+          }
+          else if (call.name === 'set_budget') {
+            const now = new Date();
+            const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            action = () => store.addBudget({ category: args.category, limit: args.limit, month });
+            if (!replyText) replyText = `✅ Sentinel protocol activated: **${args.category}** limited to ${formatAmount(args.limit, currency)}.`;
+          }
+          else if (call.name === 'change_theme') {
+            action = () => store.setTheme(args.theme);
+            if (!replyText) replyText = `🎨 Aesthetic synchronized to **${args.theme}**.`;
+          }
+          else if (call.name === 'navigate_page') {
+            action = () => store.onNavigate(args.page);
+            if (!replyText) replyText = `📍 Routing interface to **${args.page}**...`;
+          }
+
+          return { text: replyText, action };
         }
 
-        return { text: replyText, action };
+        return { text: response.text || "I processed your request, but I didn't have anything to say." };
+
+      } catch (error: any) {
+        lastError = error;
+        console.warn(`[AI Engine] Model ${modelName} with Key index ${keyIdx} failed:`, error?.message || error);
+        const errMsg = error?.message || error?.toString() || '';
+        const isRateLimit = error?.status === 429 || error?.code === 429 || /429|quota|RESOURCE_EXHAUSTED|limit|exceeded|rate/i.test(errMsg);
+        
+        if (isRateLimit) {
+          console.info(`[AI Engine] Key index ${keyIdx} hit rate limit. Trying next key or model...`);
+          break; // Break model loop to try next API key
+        }
       }
-
-      return { text: response.text || "I processed your request, but I didn't have anything to say." };
-
-    } catch (error: any) {
-      lastError = error;
-      console.warn(`[AI Engine] Key index ${keyIdx} failed:`, error?.message || error);
-      const errMsg = error?.message || error?.toString() || '';
-      const isRateLimit = error?.status === 429 || error?.code === 429 || /429|quota|RESOURCE_EXHAUSTED|limit|exceeded|rate/i.test(errMsg);
-      
-      if (isRateLimit && attempt < totalKeys - 1) {
-        console.info(`[AI Engine] Key index ${keyIdx} hit rate limit. Rotating to key index ${(keyIdx + 1) % totalKeys}...`);
-        continue;
-      }
-      break;
     }
   }
 

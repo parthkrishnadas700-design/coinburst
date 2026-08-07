@@ -61,29 +61,31 @@ Answer the user concisely and helpfully in markdown. User Query: "${message}"`;
   for (let attempt = 0; attempt < totalKeys; attempt++) {
     const keyIdx = (currentKeyIndex + attempt) % totalKeys;
     const apiKey = keys[keyIdx];
+    const modelsToTry = ['gemini-2.0-flash', 'gemini-1.5-flash'];
 
-    try {
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    for (const modelName of modelsToTry) {
+      try {
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: modelName });
 
-      const result = await model.generateContent(contextPrompt);
-      const responseText = result.response.text();
+        const result = await model.generateContent(contextPrompt);
+        const responseText = result.response.text();
 
-      // On success, rotate current index for load balancing
-      currentKeyIndex = (keyIdx + 1) % totalKeys;
+        // On success, rotate current index for load balancing
+        currentKeyIndex = (keyIdx + 1) % totalKeys;
 
-      return { text: responseText };
-    } catch (error: any) {
-      lastError = error;
-      console.warn(`[Native AI Engine] Key index ${keyIdx} failed:`, error?.message || error);
-      const errMsg = error?.message || error?.toString() || '';
-      const isRateLimit = error?.status === 429 || error?.code === 429 || /429|quota|RESOURCE_EXHAUSTED|limit|exceeded|rate/i.test(errMsg);
+        return { text: responseText };
+      } catch (error: any) {
+        lastError = error;
+        console.warn(`[Native AI Engine] Model ${modelName} with Key index ${keyIdx} failed:`, error?.message || error);
+        const errMsg = error?.message || error?.toString() || '';
+        const isRateLimit = error?.status === 429 || error?.code === 429 || /429|quota|RESOURCE_EXHAUSTED|limit|exceeded|rate/i.test(errMsg);
 
-      if (isRateLimit && attempt < totalKeys - 1) {
-        console.info(`[Native AI Engine] Key index ${keyIdx} hit rate limit. Rotating to key index ${(keyIdx + 1) % totalKeys}...`);
-        continue;
+        if (isRateLimit) {
+          console.info(`[Native AI Engine] Key index ${keyIdx} hit rate limit. Trying next key or model...`);
+          break;
+        }
       }
-      break;
     }
   }
 
