@@ -1,9 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Code, 
   SlidersHorizontal, ArrowUpRight, PiggyBank, Bot, 
-  Settings, CheckCircle2, Sparkles, BookOpen, Link, Check, Upload, FileVideo, Plus, Trash2, PlayCircle, Film
+  Settings, CheckCircle2, Sparkles, BookOpen, FileVideo, PlayCircle, Film
 } from 'lucide-react';
 import { useThemeStyles } from './DashboardWeb';
 
@@ -15,36 +15,33 @@ export type VideoItem = {
 
 export const AboutWeb: React.FC = () => {
   const cStyles = useThemeStyles();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeGuideTab, setActiveGuideTab] = useState<number>(0);
   const [activeVideoIndexMap, setActiveVideoIndexMap] = useState<Record<number, number>>({
     0: 0, 1: 0, 2: 0, 3: 0, 4: 0
   });
 
-  const [playlists, setPlaylists] = useState<Record<number, VideoItem[]>>({
+  // Videos configured directly in code by the developer
+  const [playlists] = useState<Record<number, VideoItem[]>>({
     0: [
-      { id: '1-1', title: 'Wallet Seekbar Overview', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' },
-      { id: '1-2', title: 'Adding Funds Walkthrough', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4' },
-      { id: '1-3', title: 'Preset Top-Up Chips Demo', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4' },
-      { id: '1-4', title: 'Local Public Video Sample', url: '/videos/video1.mp4' },
+      { id: '1-1', title: '1st Tutorial CB (Main Walkthrough)', url: '/videos/1st tutorial CB.mp4' },
+      { id: '1-2', title: 'Wallet Seekbar Overview', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' },
+      { id: '1-3', title: 'Adding Funds Walkthrough', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4' },
+      { id: '1-4', title: 'Preset Top-Up Chips Demo', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4' },
     ],
     1: [
       { id: '2-1', title: 'Logging Ledger Transactions', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4' },
       { id: '2-2', title: 'Income vs Expense Allocations', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4' },
       { id: '2-3', title: 'Filtering & Live Search', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutback2012.mp4' },
-      { id: '2-4', title: 'Local Public Video Sample', url: '/videos/video2.mp4' },
     ],
     2: [
       { id: '3-1', title: 'Setting Category Budgets', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4' },
       { id: '3-2', title: 'Liquid Budget Progress Bar', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' },
       { id: '3-3', title: 'Overspending Sentinel Warnings', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4' },
-      { id: '3-4', title: 'Local Public Video Sample', url: '/videos/video3.mp4' },
     ],
     3: [
       { id: '4-1', title: 'AI Advisor Voice Commands', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4' },
       { id: '4-2', title: 'Natural Language Transaction Creation', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutback2012.mp4' },
       { id: '4-3', title: 'AI Financial Analysis', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4' },
-      { id: '4-4', title: 'Local Public Video Sample', url: '/videos/video4.mp4' },
     ],
     4: [
       { id: '5-1', title: 'Multi-Currency Selector Demo', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutback2012.mp4' },
@@ -52,10 +49,6 @@ export const AboutWeb: React.FC = () => {
       { id: '5-3', title: 'Firebase Realtime Cloud Sync', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4' }
     ],
   });
-
-  const [editingVideo, setEditingVideo] = useState<boolean>(false);
-  const [inputTitle, setInputTitle] = useState<string>('');
-  const [inputUrl, setInputUrl] = useState<string>('');
 
   const guideSteps = [
     {
@@ -147,63 +140,6 @@ export const AboutWeb: React.FC = () => {
   const selectedVideoIndex = activeVideoIndexMap[activeGuideTab] || 0;
   const currentVideo = currentPlaylist[selectedVideoIndex] || currentPlaylist[0];
 
-  const handleAddVideoUrl = () => {
-    if (inputUrl.trim()) {
-      const newVideo: VideoItem = {
-        id: `v-${Date.now()}`,
-        title: inputTitle.trim() || `Video ${currentPlaylist.length + 1}`,
-        url: inputUrl.trim(),
-      };
-      setPlaylists(prev => ({
-        ...prev,
-        [activeGuideTab]: [...(prev[activeGuideTab] || []), newVideo]
-      }));
-      setActiveVideoIndexMap(prev => ({
-        ...prev,
-        [activeGuideTab]: (prev[activeGuideTab] || 0) + 1
-      }));
-    }
-    setEditingVideo(false);
-    setInputTitle('');
-    setInputUrl('');
-  };
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length > 0) {
-      const newVideos: VideoItem[] = files.map((file, idx) => ({
-        id: `v-file-${Date.now()}-${idx}`,
-        title: file.name.replace(/\.[^/.]+$/, ''),
-        url: URL.createObjectURL(file),
-      }));
-
-      setPlaylists(prev => {
-        const existing = prev[activeGuideTab] || [];
-        return {
-          ...prev,
-          [activeGuideTab]: [...existing, ...newVideos]
-        };
-      });
-
-      setActiveVideoIndexMap(prev => ({
-        ...prev,
-        [activeGuideTab]: (prev[activeGuideTab] || 0) + newVideos.length
-      }));
-      setEditingVideo(false);
-    }
-  };
-
-  const handleDeleteVideo = (videoIndex: number) => {
-    setPlaylists(prev => {
-      const updated = (prev[activeGuideTab] || []).filter((_, idx) => idx !== videoIndex);
-      return { ...prev, [activeGuideTab]: updated };
-    });
-    setActiveVideoIndexMap(prev => ({
-      ...prev,
-      [activeGuideTab]: Math.max(0, (prev[activeGuideTab] || 0) - 1)
-    }));
-  };
-
   const renderVideoPlayer = (video?: VideoItem, defaultTitle?: string) => {
     if (!video || !video.url) return null;
 
@@ -248,16 +184,6 @@ export const AboutWeb: React.FC = () => {
       transition={{ duration: 0.5 }}
       className="space-y-8 max-w-5xl mx-auto pb-12"
     >
-      {/* Hidden File Input */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        accept="video/*"
-        multiple
-        onChange={handleFileUpload}
-        className="hidden"
-      />
-
       {/* Hero Header */}
       <div className={`p-8 rounded-3xl ${cStyles.cardBg} ${cStyles.shadow} relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 border`}>
         <div className="absolute top-0 right-0 w-80 h-80 bg-[#00FF88]/5 rounded-full blur-3xl pointer-events-none" />
@@ -274,17 +200,17 @@ export const AboutWeb: React.FC = () => {
               <Sparkles className="w-3 h-3" /> Application Interactive Guide
             </span>
             <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white mt-0.5">
-              CoinBurst Master Guide & Multi-Video Gallery
+              CoinBurst Master Guide & Video Tutorials
             </h2>
             <p className={`${cStyles.textMuted} text-xs mt-1 max-w-lg`}>
-              Watch step-by-step video demonstrations or add your own videos (2 to 4+ video files supported per section).
+              Official step-by-step manual and video demonstrations to master wallets, seekbars, ledger transactions, and AI commands.
             </p>
           </div>
         </div>
 
         <div className="shrink-0 relative z-10 flex flex-col items-end gap-2">
           <span className="px-4 py-2 rounded-xl text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-            Version 2.5 • Multi-Video Playlist
+            Version 2.5 • Verified Video Manuals
           </span>
         </div>
       </div>
@@ -298,10 +224,7 @@ export const AboutWeb: React.FC = () => {
           return (
             <button
               key={step.id}
-              onClick={() => {
-                setActiveGuideTab(idx);
-                setEditingVideo(false);
-              }}
+              onClick={() => setActiveGuideTab(idx)}
               className={`px-4 py-3 rounded-2xl text-xs font-bold transition-all duration-300 border flex items-center gap-2.5 cursor-pointer whitespace-nowrap ${
                 isActive
                   ? 'bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 text-white border-emerald-400 shadow-lg scale-102'
@@ -344,63 +267,7 @@ export const AboutWeb: React.FC = () => {
                 <p className="text-xs text-gray-400 mt-1">{currentStep.summary}</p>
               </div>
             </div>
-
-            {/* Video Control Buttons */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-black shadow-lg transition-all flex items-center gap-2 cursor-pointer font-black"
-              >
-                <Upload className="w-4 h-4" />
-                <span>📁 Upload Videos (PC)</span>
-              </button>
-
-              <button
-                onClick={() => setEditingVideo(!editingVideo)}
-                className="px-3.5 py-2 rounded-xl text-xs font-bold bg-white/5 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all flex items-center gap-2 cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                <span>{editingVideo ? 'Cancel' : '➕ Add Video Link'}</span>
-              </button>
-            </div>
           </div>
-
-          {/* Add Video URL Form */}
-          {editingVideo && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              className="p-4 rounded-2xl bg-emerald-950/30 border border-emerald-500/30 space-y-3"
-            >
-              <label className="text-xs font-bold text-emerald-300 flex items-center gap-2">
-                <Link className="w-3.5 h-3.5" /> Add Video URL (YouTube or Direct MP4):
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <input
-                  type="text"
-                  value={inputTitle}
-                  onChange={(e) => setInputTitle(e.target.value)}
-                  placeholder="Video Title (e.g. Video 2: Deep Dive)"
-                  className="px-4 py-2 rounded-xl bg-black/60 border border-gray-700 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-400"
-                />
-                <input
-                  type="text"
-                  value={inputUrl}
-                  onChange={(e) => setInputUrl(e.target.value)}
-                  placeholder="Video Link (e.g. https://... or /videos/sample.mp4)"
-                  className="sm:col-span-2 px-4 py-2 rounded-xl bg-black/60 border border-gray-700 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-400"
-                />
-              </div>
-              <div className="flex justify-end">
-                <button
-                  onClick={handleAddVideoUrl}
-                  className="px-5 py-2 rounded-xl text-xs font-black bg-emerald-500 hover:bg-emerald-400 text-black flex items-center gap-1.5 cursor-pointer shadow-lg"
-                >
-                  <Check className="w-4 h-4" /> Add Video to Playlist
-                </button>
-              </div>
-            </motion.div>
-          )}
 
           {/* Main Video Canvas */}
           <div className="relative rounded-2xl overflow-hidden border border-gray-800 bg-black/80 shadow-2xl group">
@@ -420,59 +287,46 @@ export const AboutWeb: React.FC = () => {
             </div>
           </div>
 
-          {/* Interactive Playlist Carousel / Gallery */}
-          <div className="space-y-3 border-t border-gray-800/60 pt-6">
-            <div className="flex items-center justify-between">
-              <h4 className="text-xs font-black uppercase tracking-wider text-emerald-400 flex items-center gap-2">
-                <Film className="w-4 h-4" /> Section Video Playlist ({currentPlaylist.length} Videos Available):
-              </h4>
-              <span className="text-[11px] text-gray-400">Click any video card below to play</span>
-            </div>
+          {/* Interactive Playlist Selector */}
+          {currentPlaylist.length > 1 && (
+            <div className="space-y-3 border-t border-gray-800/60 pt-6">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-black uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+                  <Film className="w-4 h-4" /> Official Section Videos ({currentPlaylist.length} Available):
+                </h4>
+                <span className="text-[11px] text-gray-400">Click any video below to switch video stream</span>
+              </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-              {currentPlaylist.map((video, idx) => {
-                const isSelected = selectedVideoIndex === idx;
-                return (
-                  <div
-                    key={video.id}
-                    onClick={() => setActiveVideoIndexMap(prev => ({ ...prev, [activeGuideTab]: idx }))}
-                    className={`p-3 rounded-2xl border transition-all cursor-pointer relative group flex flex-col justify-between ${
-                      isSelected
-                        ? 'bg-gradient-to-tr from-emerald-950/60 via-gray-900 to-emerald-950/40 border-emerald-400 shadow-xl shadow-emerald-500/10 scale-102'
-                        : 'bg-white/5 border-gray-800 hover:border-gray-700 hover:bg-white/10'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                {currentPlaylist.map((video, idx) => {
+                  const isSelected = selectedVideoIndex === idx;
+                  return (
+                    <div
+                      key={video.id}
+                      onClick={() => setActiveVideoIndexMap(prev => ({ ...prev, [activeGuideTab]: idx }))}
+                      className={`p-3.5 rounded-2xl border transition-all cursor-pointer relative group flex flex-col justify-between ${
+                        isSelected
+                          ? 'bg-gradient-to-tr from-emerald-950/60 via-gray-900 to-emerald-950/40 border-emerald-400 shadow-xl shadow-emerald-500/10 scale-102'
+                          : 'bg-white/5 border-gray-800 hover:border-gray-700 hover:bg-white/10'
+                      }`}
+                    >
                       <div className="flex items-center gap-2">
                         <PlayCircle className={`w-5 h-5 shrink-0 ${isSelected ? 'text-emerald-400 animate-pulse' : 'text-gray-400'}`} />
                         <span className="text-xs font-bold text-white line-clamp-1">
                           {idx + 1}. {video.title}
                         </span>
                       </div>
-                      
-                      {currentPlaylist.length > 1 && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteVideo(idx);
-                          }}
-                          className="text-gray-500 hover:text-red-400 p-1 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                          title="Remove video"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
 
-                    <div className="mt-3 flex items-center justify-between text-[10px] text-gray-400 border-t border-gray-800/60 pt-2 font-mono">
-                      <span>{video.url.includes('youtube') ? 'YouTube' : 'Video File'}</span>
-                      {isSelected && <span className="text-emerald-400 font-bold">● Active</span>}
+                      <div className="mt-3 flex items-center justify-between text-[10px] text-gray-400 border-t border-gray-800/60 pt-2 font-mono">
+                        <span>{video.url.includes('youtube') ? 'YouTube' : 'Video File'}</span>
+                        {isSelected && <span className="text-emerald-400 font-bold">● Active</span>}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Step-by-Step Instructions */}
           <div className="space-y-4 border-t border-gray-800/60 pt-6">
