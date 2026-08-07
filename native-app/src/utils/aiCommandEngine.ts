@@ -61,7 +61,7 @@ Answer the user concisely and helpfully in markdown. User Query: "${message}"`;
   for (let attempt = 0; attempt < totalKeys; attempt++) {
     const keyIdx = (currentKeyIndex + attempt) % totalKeys;
     const apiKey = keys[keyIdx];
-    const modelsToTry = ['gemini-2.0-flash', 'gemini-1.5-flash'];
+    const modelsToTry = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash'];
 
     for (const modelName of modelsToTry) {
       try {
@@ -78,13 +78,7 @@ Answer the user concisely and helpfully in markdown. User Query: "${message}"`;
       } catch (error: any) {
         lastError = error;
         console.warn(`[Native AI Engine] Model ${modelName} with Key index ${keyIdx} failed:`, error?.message || error);
-        const errMsg = error?.message || error?.toString() || '';
-        const isRateLimit = error?.status === 429 || error?.code === 429 || /429|quota|RESOURCE_EXHAUSTED|limit|exceeded|rate/i.test(errMsg);
-
-        if (isRateLimit) {
-          console.info(`[Native AI Engine] Key index ${keyIdx} hit rate limit. Trying next key or model...`);
-          break;
-        }
+        // Continue trying next model or next key
       }
     }
   }

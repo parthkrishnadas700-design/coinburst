@@ -167,7 +167,7 @@ Format your responses using Markdown. Be concise, helpful, and adopt a sleek, sl
     const keyIdx = (currentKeyIndex + attempt) % totalKeys;
     const apiKey = keys[keyIdx];
     const ai = new GoogleGenAI({ apiKey });
-    const modelsToTry = ['gemini-2.0-flash', 'gemini-1.5-flash'];
+    const modelsToTry = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash'];
 
     for (const modelName of modelsToTry) {
       try {
@@ -231,13 +231,7 @@ Format your responses using Markdown. Be concise, helpful, and adopt a sleek, sl
       } catch (error: any) {
         lastError = error;
         console.warn(`[AI Engine] Model ${modelName} with Key index ${keyIdx} failed:`, error?.message || error);
-        const errMsg = error?.message || error?.toString() || '';
-        const isRateLimit = error?.status === 429 || error?.code === 429 || /429|quota|RESOURCE_EXHAUSTED|limit|exceeded|rate/i.test(errMsg);
-        
-        if (isRateLimit) {
-          console.info(`[AI Engine] Key index ${keyIdx} hit rate limit. Trying next key or model...`);
-          break; // Break model loop to try next API key
-        }
+        // Continue to try next model or next API key
       }
     }
   }
