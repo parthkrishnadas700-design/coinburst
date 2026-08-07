@@ -1,123 +1,267 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { ShieldCheck, Palette, Code, Cpu } from 'lucide-react';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Code, Play, Pause, 
+  SlidersHorizontal, ArrowUpRight, PiggyBank, Bot, 
+  Settings, CheckCircle2, Sparkles, BookOpen
+} from 'lucide-react';
 import { useThemeStyles } from './DashboardWeb';
 
 export const AboutWeb: React.FC = () => {
   const cStyles = useThemeStyles();
+  const [activeGuideTab, setActiveGuideTab] = useState<number>(0);
+  const [isPlayingDemo, setIsPlayingDemo] = useState<boolean>(true);
 
-  const containerVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.6,
-        staggerChildren: 0.15
-      }
+  const guideSteps = [
+    {
+      id: 1,
+      title: '1. Wallets Seekbar & Adding Money',
+      badge: 'New Feature',
+      icon: SlidersHorizontal,
+      color: 'from-emerald-500 to-cyan-500',
+      accentColor: 'text-emerald-400',
+      summary: 'Inspect present amounts in any wallet and top up funds instantly.',
+      steps: [
+        'Navigate to Dashboard or Ledger view.',
+        'Drag the horizontal Range Seekbar left/right or use < > arrows to scrub between wallets.',
+        'View the Present Amount Available in large font along with Lifetime Inflow & Outflow.',
+        'Click "+ Add Money to Wallet" or choose quick preset chips (+₹500 / +₹1,000 / +₹5,000).',
+        'Use the in-card "Slide & Deposit" slider to dynamically choose deposit amounts and click Deposit.'
+      ],
+      videoSimText: '▶ DEMO VIDEO: Scrubbing Wallet Seekbar & Depositing Funds into Chase Savings'
+    },
+    {
+      id: 2,
+      title: '2. Ledger & Transaction Recording',
+      badge: 'Core Ledger',
+      icon: ArrowUpRight,
+      color: 'from-blue-500 to-indigo-500',
+      accentColor: 'text-blue-400',
+      summary: 'Track income, expenses, categories, and account allocations.',
+      steps: [
+        'Open "Ledger & Entry" from the sidebar.',
+        'Click "+ Add Transaction" to launch the entry wizard.',
+        'Choose Transaction Type (Income vs Expense), select target Wallet Node, and enter Amount.',
+        'Assign Category (Food, Salary, Bills, Shopping) and write an optional note.',
+        'Filter or search history instantly using the live search bar or delete items with confirmation.'
+      ],
+      videoSimText: '▶ DEMO VIDEO: Logging Income & Expenses into Specific Wallet Nodes'
+    },
+    {
+      id: 3,
+      title: '3. Smart Budgets & Sentinels',
+      badge: 'Financial Guardrails',
+      icon: PiggyBank,
+      color: 'from-pink-500 to-purple-500',
+      accentColor: 'text-pink-400',
+      summary: 'Set spending limits per category and prevent overspending.',
+      steps: [
+        'Open "Smart Budgets" tab.',
+        'Set monthly budget caps for individual categories (e.g., ₹5,000 for Groceries).',
+        'Watch the Liquid Budget Bar fill up as transactions are recorded.',
+        'Receive automated visual warnings when approaching or exceeding your target budget.'
+      ],
+      videoSimText: '▶ DEMO VIDEO: Creating Category Limits & Liquid Progress Indicators'
+    },
+    {
+      id: 4,
+      title: '4. AI Advisor & Voice Commands',
+      badge: 'Smart Engine',
+      icon: Bot,
+      color: 'from-amber-500 to-orange-500',
+      accentColor: 'text-amber-400',
+      summary: 'Control your entire workspace using natural language instructions.',
+      steps: [
+        'Click "AI Advisor" in the left navigation panel.',
+        'Type or dictate instructions like: "Add expense 500 Food" or "Log income 10000 Salary".',
+        'Execute account commands e.g. "Create account HDFC Bank" or "Delete last transaction".',
+        'Ask financial questions e.g. "Show my spending breakdown" or "Check budgets".'
+      ],
+      videoSimText: '▶ DEMO VIDEO: Using Natural Language AI Engine to Perform Ledger Actions'
+    },
+    {
+      id: 5,
+      title: '5. Themes & Multi-Currency Settings',
+      badge: 'Customization',
+      icon: Settings,
+      color: 'from-cyan-500 to-emerald-500',
+      accentColor: 'text-cyan-400',
+      summary: 'Personalize your display currency and visual aesthetics.',
+      steps: [
+        'Navigate to "User Theme" settings.',
+        'Select your preferred currency (INR ₹, USD $, EUR €, GBP £, JPY ¥, AED, CAD, AUD).',
+        'Switch theme presets: Dark Mode, Minimal Light, Cyberpunk Neon, Glassmorphism, Forest, or Synthwave.',
+        'Profile changes sync automatically across all logged-in devices via Firebase.'
+      ],
+      videoSimText: '▶ DEMO VIDEO: Changing Theme Styles and Currency Formats in Real-Time'
     }
-  };
+  ];
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 15 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.4 } }
-  };
+  const currentStep = guideSteps[activeGuideTab];
 
   return (
     <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
       className="space-y-8 max-w-5xl mx-auto pb-12"
     >
-      {/* Hero Banner */}
-      <motion.div
-        variants={itemVariants}
-        className={`p-8 rounded-3xl ${cStyles.cardBg} ${cStyles.shadow} relative overflow-hidden flex flex-col md:flex-row items-center gap-8 border`}
-      >
-        {/* Decorative elements */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-[#00FF88]/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#FF007F]/5 rounded-full blur-3xl pointer-events-none" />
+      {/* Hero Header */}
+      <div className={`p-8 rounded-3xl ${cStyles.cardBg} ${cStyles.shadow} relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 border`}>
+        <div className="absolute top-0 right-0 w-80 h-80 bg-[#00FF88]/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-[#FF007F]/5 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="shrink-0 w-24 h-24 rounded-2xl bg-gradient-to-tr from-[#FF007F] via-[#00FF88] to-[#00E5FF] p-[3px] shadow-lg shadow-[#FF007F]/10">
-          <div className="w-full h-full bg-[#0B0B0F] rounded-2xl flex items-center justify-center">
-            <span className="font-['Poppins'] font-black text-4xl text-white">CB</span>
+        <div className="flex items-center gap-5 relative z-10">
+          <div className="shrink-0 w-20 h-20 rounded-2xl bg-gradient-to-tr from-[#FF007F] via-[#00FF88] to-[#00E5FF] p-[3px] shadow-lg">
+            <div className="w-full h-full bg-[#0B0B0F] rounded-2xl flex items-center justify-center">
+              <BookOpen className="w-10 h-10 text-emerald-400 animate-pulse" />
+            </div>
+          </div>
+          <div>
+            <span className="text-[10px] uppercase font-black tracking-widest text-emerald-400 flex items-center gap-1">
+              <Sparkles className="w-3 h-3" /> Application Interactive Guide
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white mt-0.5">
+              CoinBurst Master Guide & Video Tutorials
+            </h2>
+            <p className={`${cStyles.textMuted} text-xs mt-1 max-w-lg`}>
+              Complete step-by-step manual and video demonstrations to master wallets, seekbars, ledger transactions, and AI commands.
+            </p>
           </div>
         </div>
 
-        <div className="text-center md:text-left space-y-2">
-          <h3 className="text-2xl font-black tracking-tight">CoinBurst: Wealth Nexus</h3>
-          <p className={`${cStyles.textMuted} text-sm max-w-xl`}>
-            A premium personal ledger built to elevate wealth management. Blending high-performance technology, hyper-fluid design aesthetics, and contextual artificial intelligence.
-          </p>
+        <div className="shrink-0 relative z-10">
+          <span className="px-4 py-2 rounded-xl text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+            Version 2.5 • Live Build
+          </span>
         </div>
-      </motion.div>
+      </div>
 
-      {/* Core Technical Highlights */}
-      <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className={`p-6 rounded-2xl ${cStyles.cardBg} border ${cStyles.gradientBorder} space-y-4`}>
-          <div className={`w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/20`}>
-            <ShieldCheck size={20} />
+      {/* Guide Navigation Tabs */}
+      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+        {guideSteps.map((step, idx) => {
+          const Icon = step.icon;
+          const isActive = activeGuideTab === idx;
+          return (
+            <button
+              key={step.id}
+              onClick={() => setActiveGuideTab(idx)}
+              className={`px-4 py-3 rounded-2xl text-xs font-bold transition-all duration-300 border flex items-center gap-2.5 cursor-pointer whitespace-nowrap ${
+                isActive
+                  ? 'bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 text-white border-emerald-400 shadow-lg scale-102'
+                  : 'bg-white/5 text-gray-400 border-gray-800 hover:border-gray-700'
+              }`}
+            >
+              <Icon className={`w-4 h-4 ${isActive ? step.accentColor : 'text-gray-400'}`} />
+              <span>{step.title.split('.')[1]}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Interactive Video & Step Display Card */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentStep.id}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          transition={{ duration: 0.3 }}
+          className={`p-6 sm:p-8 rounded-3xl border ${cStyles.cardBg} ${cStyles.shadow} space-y-8`}
+        >
+          {/* Section Header */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-800/60 pb-6">
+            <div className="flex items-center gap-3">
+              <div className={`p-3 rounded-2xl bg-gradient-to-tr ${currentStep.color} text-white shadow-lg`}>
+                <currentStep.icon className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xl font-black tracking-tight text-white">{currentStep.title}</h3>
+                  <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    {currentStep.badge}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">{currentStep.summary}</p>
+              </div>
+            </div>
           </div>
-          <h4 className="font-bold text-base">Military-Grade Ledger</h4>
-          <p className={`${cStyles.textMuted} text-xs leading-relaxed`}>
-            Real-time Firebase synchronisation guarantees instant updates across your devices, backed by client-side caching and offline storage.
-          </p>
-        </div>
 
-        <div className={`p-6 rounded-2xl ${cStyles.cardBg} border ${cStyles.gradientBorder} space-y-4`}>
-          <div className={`w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400 border border-purple-500/20`}>
-            <Palette size={20} />
+          {/* Simulated Video Player Box */}
+          <div className="relative rounded-2xl overflow-hidden border border-gray-800 bg-black/80 shadow-2xl group">
+            {/* Video Canvas Header Bar */}
+            <div className="px-4 py-2.5 bg-black/60 border-b border-gray-800 flex items-center justify-between text-xs text-gray-400 font-mono">
+              <span className="flex items-center gap-2 text-emerald-400 font-bold">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" /> Interactive Demo Video
+              </span>
+              <span>HD 1080p • 60 FPS</span>
+            </div>
+
+            {/* Video Display Area */}
+            <div className="p-8 sm:p-12 flex flex-col items-center justify-center text-center relative min-h-[220px] bg-gradient-to-b from-gray-900/40 via-black to-gray-900/60">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center text-black shadow-xl shadow-emerald-500/30 mb-4 cursor-pointer hover:scale-110 transition-transform"
+                   onClick={() => setIsPlayingDemo(!isPlayingDemo)}>
+                {isPlayingDemo ? <Pause className="w-7 h-7 fill-black" /> : <Play className="w-7 h-7 fill-black ml-1" />}
+              </div>
+
+              <h4 className="text-sm sm:text-base font-bold text-white max-w-md">
+                {currentStep.videoSimText}
+              </h4>
+              <p className="text-xs text-gray-400 mt-2">
+                {isPlayingDemo ? '⚡ Video playback active — follow the step guide below' : '⏸ Click play button to start video demonstration'}
+              </p>
+
+              {/* Video Timeline Bar */}
+              <div className="w-full max-w-lg bg-gray-800 h-1.5 rounded-full mt-6 overflow-hidden">
+                <motion.div
+                  animate={isPlayingDemo ? { width: ['0%', '100%'] } : { width: '45%' }}
+                  transition={isPlayingDemo ? { repeat: Infinity, duration: 6, ease: 'linear' } : { duration: 0 }}
+                  className="h-full bg-gradient-to-r from-emerald-400 to-cyan-400"
+                />
+              </div>
+            </div>
           </div>
-          <h4 className="font-bold text-base">Bespoke Styling Engine</h4>
-          <p className={`${cStyles.textMuted} text-xs leading-relaxed`}>
-            Seamlessly switch visual profiles. From minimalist light modes to neon-saturated cyberpunk scanlines with integrated soundscapes.
-          </p>
-        </div>
 
-        <div className={`p-6 rounded-2xl ${cStyles.cardBg} border ${cStyles.gradientBorder} space-y-4`}>
-          <div className={`w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center text-cyan-400 border border-cyan-500/20`}>
-            <Cpu size={20} />
+          {/* Step-by-Step Instructions */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-black uppercase tracking-wider text-gray-300 flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Step-by-Step Execution Guide:
+            </h4>
+
+            <div className="grid grid-cols-1 gap-3">
+              {currentStep.steps.map((stepText, idx) => (
+                <div key={idx} className={`p-4 rounded-xl border flex items-start gap-4 ${cStyles.ledgerFeedBg}`}>
+                  <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-mono font-black text-xs shrink-0 mt-0.5">
+                    {idx + 1}
+                  </div>
+                  <p className="text-xs font-semibold text-gray-200 leading-relaxed">
+                    {stepText}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
-          <h4 className="font-bold text-base">Contextual AI Advisor</h4>
-          <p className={`${cStyles.textMuted} text-xs leading-relaxed`}>
-            Natural language parsing maps instructions directly to actions. Ask for projections, ledger searches, or savings velocity advice.
-          </p>
-        </div>
-      </motion.div>
+        </motion.div>
+      </AnimatePresence>
 
-      {/* Behind the Technology */}
-      <motion.div
-        variants={itemVariants}
-        className={`p-6 rounded-2xl ${cStyles.cardBg} border space-y-6`}
-      >
+      {/* Tech Stack Footer */}
+      <div className={`p-6 rounded-2xl ${cStyles.cardBg} border space-y-4`}>
         <h4 className="font-black text-lg flex items-center gap-2">
           <Code className={cStyles.accent} size={20} />
-          Tech Stack Architecture
+          Technical Stack & Security Architecture
         </h4>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs">
-          <div className="space-y-3">
-            <h5 className="font-bold uppercase tracking-wider text-gray-400">Frontend Stack</h5>
-            <ul className="space-y-2 list-disc pl-4 text-gray-300">
-              <li><strong className="text-white">React 19 & TypeScript:</strong> Type-safe interfaces and robust component structuring.</li>
-              <li><strong className="text-white">Zustand State Store:</strong> Ultra-fast state management with custom LocalStorage hydration mapping.</li>
-              <li><strong className="text-white">Framer Motion & SVG:</strong> Liquid progress bars and dual overlapping wave oscillators.</li>
-              <li><strong className="text-white">Tailwind CSS:</strong> Adaptive theme classes leveraging utility tokens.</li>
-            </ul>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs text-gray-400">
+          <div>
+            <strong className="text-white block mb-1">Frontend Engine:</strong>
+            React 19, TypeScript, Zustand state persistence, Framer Motion, and Tailwind CSS.
           </div>
-
-          <div className="space-y-3">
-            <h5 className="font-bold uppercase tracking-wider text-gray-400">Mobile & Backend Integration</h5>
-            <ul className="space-y-2 list-disc pl-4 text-gray-300">
-              <li><strong className="text-white">Capacitor Native SDK:</strong> Cross-platform wrapper targeting Android with custom Safe Area Margins.</li>
-              <li><strong className="text-white">Firebase Suite:</strong> Realtime Database ledger backend with synchronised offline write queues.</li>
-              <li><strong className="text-white">Recharts Engine:</strong> Interactive area trends and budget tracking nodes.</li>
-            </ul>
+          <div>
+            <strong className="text-white block mb-1">Backend & Mobile:</strong>
+            Firebase Realtime Database sync, Capacitor Native Android SDK, and offline queue.
           </div>
         </div>
-      </motion.div>
-
+      </div>
 
     </motion.div>
   );

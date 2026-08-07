@@ -74,8 +74,6 @@ export const Dashboard: React.FC = () => {
         </div>
       </header>
 
-
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         
         {/* Income vs Expense Pie Chart */}

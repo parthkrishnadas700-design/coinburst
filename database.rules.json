@@ -12,7 +12,7 @@
             ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 100"
           },
           "email": {
-            ".validate": "newData.isString() && newData.val().length > 0"
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 254"
           },
           "photoURL": {
             ".validate": "newData.isString() && newData.val().length <= 2048"
@@ -20,10 +20,10 @@
           "$other": { ".validate": false }
         },
         "theme": {
-          ".validate": "newData.isString() && (newData.val() == 'dark' || newData.val() == 'light' || newData.val() == 'cyberpunk' || newData.val() == 'glass' || newData.val() == 'forest')"
+          ".validate": "newData.isString() && (newData.val() == 'dark' || newData.val() == 'light' || newData.val() == 'cyberpunk' || newData.val() == 'glass' || newData.val() == 'forest' || newData.val() == 'synthwave')"
         },
         "currency": {
-          ".validate": "newData.isString() && newData.val().length == 3"
+          ".validate": "newData.isString() && newData.val().length >= 3 && newData.val().length <= 5"
         },
         "accounts": {
           ".validate": "newData.hasChildren() || newData.val() == null"

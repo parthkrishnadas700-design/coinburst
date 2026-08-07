@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { database } from './firebase';
 import { ref, set as firebaseSet, get as firebaseGet, update as firebaseUpdate } from 'firebase/database';
 import { triggerHaptic, triggerHapticNotification, showNativeToast } from './nativeBridge';
+import { sanitizeText, validateAmount, sanitizeCategory, hashPin } from './securityUtils';
 
 export type ThemeType = 'dark' | 'light' | 'cyberpunk' | 'glass' | 'forest' | 'synthwave';
 
@@ -91,6 +92,15 @@ interface FinanceState {
   streakDays: number;
   lastActiveDate: string;
 
+  // ── Security & PIN Lock ───────────────────────────────────────────
+  isPinEnabled: boolean;
+  securityPinHash: string | null;
+  isLocked: boolean;
+
+  setSecurityPin: (pin: string | null) => void;
+  verifyAndUnlock: (pin: string) => boolean;
+  lockApp: () => void;
+
   setCurrency: (currency: string) => void;
   setTheme: (theme: ThemeType) => void;
   addTransaction: (transaction: Omit<Transaction, 'id'>) => Transaction;
@@ -123,6 +133,41 @@ const getCurrentMonthString = (dateStr?: string) => {
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const year = d.getFullYear();
   return `${year}-${month}`;
+};
+
+/**
+ * Recalculates spent totals for all budgets based on matching expense transactions.
+ * Matches by category name OR transaction title/description (case-insensitive) or 'all'.
+ */
+export const recalculateBudgetSpent = (budgets: Budget[], transactions: Transaction[]): Budget[] => {
+  return budgets.map((budget) => {
+    const budgetMonth = budget.month;
+    const bCatLower = (budget.category || '').toLowerCase().trim();
+
+    const matchingExpenses = transactions.filter((t) => {
+      if (t.type !== 'expense') return false;
+
+      // Month match (if budget has a month specified)
+      const tMonth = getCurrentMonthString(t.date);
+      if (budgetMonth && budgetMonth !== tMonth) return false;
+
+      // Category & Title (description) match logic
+      const isAll = bCatLower === 'all';
+      const tCatLower = (t.category || '').toLowerCase().trim();
+      const tDescLower = (t.description || '').toLowerCase().trim();
+
+      const matchesCategory = bCatLower === tCatLower || (bCatLower.length > 2 && tCatLower.includes(bCatLower));
+      const matchesDescription =
+        tDescLower === bCatLower ||
+        (bCatLower.length > 2 && tDescLower.includes(bCatLower)) ||
+        (tDescLower.length > 2 && bCatLower.includes(tDescLower));
+
+      return isAll || matchesCategory || matchesDescription;
+    });
+
+    const totalSpent = matchingExpenses.reduce((sum, t) => sum + t.amount, 0);
+    return { ...budget, spent: totalSpent };
+  });
 };
 
 // Firebase RTDB silently drops empty arrays — convert [] to null so the key is preserved
@@ -174,6 +219,46 @@ export const useFinanceStore = create<FinanceState>()(
       streakDays: 0,
       lastActiveDate: '',
 
+      // Security PIN Lock Defaults
+      isPinEnabled: false,
+      securityPinHash: null,
+      isLocked: false,
+
+      setSecurityPin: (pin) => {
+        if (!pin) {
+          set({ isPinEnabled: false, securityPinHash: null, isLocked: false });
+          showNativeToast('Security PIN removed');
+        } else {
+          const hashed = hashPin(pin);
+          set({ isPinEnabled: true, securityPinHash: hashed, isLocked: false });
+          showNativeToast('4-Digit Security PIN enabled!');
+        }
+      },
+
+      verifyAndUnlock: (pin) => {
+        const { securityPinHash } = get();
+        if (!securityPinHash) {
+          set({ isLocked: false });
+          return true;
+        }
+        const enteredHash = hashPin(pin);
+        if (enteredHash === securityPinHash) {
+          set({ isLocked: false });
+          triggerHapticNotification('success');
+          return true;
+        }
+        triggerHapticNotification('error');
+        return false;
+      },
+
+      lockApp: () => {
+        const { isPinEnabled } = get();
+        if (isPinEnabled) {
+          set({ isLocked: true });
+          triggerHaptic('medium');
+        }
+      },
+
       // ── Currency ──────────────────────────────────────────────────────────────
       setCurrency: (currency) => {
         set({ currency });
@@ -191,30 +276,25 @@ export const useFinanceStore = create<FinanceState>()(
       // ── Transactions ────────────────────────────────────────────────────────
       addTransaction: (txData) => {
         const id = 'tx_' + Math.random().toString(36).substring(2, 9);
-        const newTransaction: Transaction = { ...txData, id };
-        const txMonth = getCurrentMonthString(newTransaction.date);
-        const amountChange = newTransaction.type === 'income' ? newTransaction.amount : -newTransaction.amount;
+        const sanitizedTx: Transaction = {
+          ...txData,
+          id,
+          description: sanitizeText(txData.description, 200),
+          category: sanitizeCategory(txData.category),
+          amount: validateAmount(txData.amount),
+        };
+        const amountChange = sanitizedTx.type === 'income' ? sanitizedTx.amount : -sanitizedTx.amount;
         const { accounts, budgets, transactions, theme, currency } = get();
 
         const updatedAccounts = accounts.map((acc) =>
-          acc.id === newTransaction.accountId
+          acc.id === sanitizedTx.accountId
             ? { ...acc, balance: acc.balance + amountChange }
             : acc
         );
 
-        const updatedBudgets = budgets.map((budget) => {
-          if (newTransaction.type === 'expense' && budget.month === txMonth) {
-            const matchesCategory =
-              budget.category.toLowerCase() === newTransaction.category.toLowerCase();
-            const isAllBudget = budget.category === 'all';
-            if (matchesCategory || isAllBudget) {
-              return { ...budget, spent: budget.spent + newTransaction.amount };
-            }
-          }
-          return budget;
-        });
+        const updatedTransactions = [sanitizedTx, ...transactions];
+        const updatedBudgets = recalculateBudgetSpent(budgets, updatedTransactions);
 
-        const updatedTransactions = [newTransaction, ...transactions];
         set({ transactions: updatedTransactions, accounts: updatedAccounts, budgets: updatedBudgets });
         triggerHaptic('medium');
         triggerHapticNotification('success');
@@ -223,7 +303,7 @@ export const useFinanceStore = create<FinanceState>()(
         const { user } = get();
         if (user) saveStateToFirebase(user.uid, updatedAccounts, updatedTransactions, updatedBudgets, theme, currency);
 
-        return newTransaction;
+        return sanitizedTx;
       },
 
       deleteTransaction: (id) => {
@@ -231,7 +311,6 @@ export const useFinanceStore = create<FinanceState>()(
         const txToDelete = transactions.find((t) => t.id === id);
         if (!txToDelete) return;
 
-        const txMonth = getCurrentMonthString(txToDelete.date);
         const amountChange = txToDelete.type === 'income' ? -txToDelete.amount : txToDelete.amount;
 
         const updatedAccounts = accounts.map((acc) =>
@@ -240,19 +319,9 @@ export const useFinanceStore = create<FinanceState>()(
             : acc
         );
 
-        const updatedBudgets = budgets.map((budget) => {
-          if (txToDelete.type === 'expense' && budget.month === txMonth) {
-            const matchesCategory =
-              budget.category.toLowerCase() === txToDelete.category.toLowerCase();
-            const isAllBudget = budget.category === 'all';
-            if (matchesCategory || isAllBudget) {
-              return { ...budget, spent: Math.max(0, budget.spent - txToDelete.amount) };
-            }
-          }
-          return budget;
-        });
-
         const updatedTransactions = transactions.filter((t) => t.id !== id);
+        const updatedBudgets = recalculateBudgetSpent(budgets, updatedTransactions);
+
         set({ transactions: updatedTransactions, accounts: updatedAccounts, budgets: updatedBudgets });
         triggerHaptic('heavy');
         showNativeToast('Transaction deleted');
@@ -264,7 +333,12 @@ export const useFinanceStore = create<FinanceState>()(
       // ── Accounts ─────────────────────────────────────────────────────────────
       addAccount: (accData) => {
         const id = 'acc_' + Math.random().toString(36).substring(2, 9);
-        const newAccount: Account = { ...accData, id };
+        const newAccount: Account = {
+          ...accData,
+          id,
+          name: sanitizeText(accData.name, 100),
+          balance: validateAmount(accData.balance, true),
+        };
         const updatedAccounts = [...get().accounts, newAccount];
         set({ accounts: updatedAccounts });
 
@@ -276,15 +350,17 @@ export const useFinanceStore = create<FinanceState>()(
         const { transactions, budgets, theme, currency } = get();
         const updatedAccounts = get().accounts.filter((a) => a.id !== id);
         const updatedTransactions = transactions.filter((t) => t.accountId !== id);
-        set({ accounts: updatedAccounts, transactions: updatedTransactions, selectedAccountId: null });
+        const updatedBudgets = recalculateBudgetSpent(budgets, updatedTransactions);
+        set({ accounts: updatedAccounts, transactions: updatedTransactions, budgets: updatedBudgets, selectedAccountId: null });
 
         const { user } = get();
-        if (user) saveStateToFirebase(user.uid, updatedAccounts, updatedTransactions, budgets, theme, currency);
+        if (user) saveStateToFirebase(user.uid, updatedAccounts, updatedTransactions, updatedBudgets, theme, currency);
       },
 
       updateAccountBalance: (accountId, amount) => {
+        const validatedAmt = validateAmount(amount, true);
         const updatedAccounts = get().accounts.map((acc) =>
-          acc.id === accountId ? { ...acc, balance: acc.balance + amount } : acc
+          acc.id === accountId ? { ...acc, balance: acc.balance + validatedAmt } : acc
         );
         set({ accounts: updatedAccounts });
 
@@ -295,11 +371,19 @@ export const useFinanceStore = create<FinanceState>()(
       // ── Budgets ──────────────────────────────────────────────────────────────
       addBudget: (budgetData) => {
         const id = 'bud_' + Math.random().toString(36).substring(2, 9);
-        const newBudget: Budget = { ...budgetData, assigned: (budgetData as any).assigned || 0, id, spent: 0 };
-        const updatedBudgets = [...get().budgets, newBudget];
+        const { transactions } = get();
+        const rawBudget: Budget = {
+          ...budgetData,
+          category: sanitizeCategory(budgetData.category),
+          limit: validateAmount(budgetData.limit),
+          assigned: (budgetData as any).assigned || 0,
+          id,
+          spent: 0,
+        };
+        const updatedBudgets = recalculateBudgetSpent([...get().budgets, rawBudget], transactions);
         set({ budgets: updatedBudgets });
 
-        const { user, accounts, transactions, theme, currency } = get();
+        const { user, accounts, theme, currency } = get();
         if (user) saveStateToFirebase(user.uid, accounts, transactions, updatedBudgets, theme, currency);
       },
 
@@ -421,11 +505,16 @@ export const useFinanceStore = create<FinanceState>()(
                 loadedUser.displayName = data.profile.displayName || user.displayName;
                 loadedUser.photoURL = data.profile.photoURL || user.photoURL;
               }
+              const loadedAccounts = fromFirebaseArray<Account>(data.accounts);
+              const loadedTransactions = fromFirebaseArray<Transaction>(data.transactions);
+              const rawBudgets = fromFirebaseArray<Budget>(data.budgets);
+              const loadedBudgets = recalculateBudgetSpent(rawBudgets, loadedTransactions);
+
               set({
                 user: loadedUser,
-                accounts: fromFirebaseArray<Account>(data.accounts),
-                transactions: fromFirebaseArray<Transaction>(data.transactions),
-                budgets: fromFirebaseArray<Budget>(data.budgets),
+                accounts: loadedAccounts,
+                transactions: loadedTransactions,
+                budgets: loadedBudgets,
                 theme: (data.theme as ThemeType) || 'dark',
                 currency: data.currency || 'INR',
               });

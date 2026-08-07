@@ -6,6 +6,7 @@ import { AddTransactionWeb } from './components/AddTransactionWeb';
 import { Layout } from './pages/Layout';
 import { Dashboard } from './pages/Dashboard';
 import { WelcomeScreen } from './components/WelcomeScreen';
+import { SecurityLockOverlay } from './components/SecurityLockOverlay';
 import { auth } from './shared/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useFinanceStore } from './shared/useFinanceStore';
@@ -22,8 +23,9 @@ function App() {
   const user = useFinanceStore((state) => state.user);
   const theme = useFinanceStore((state) => state.theme);
   
-  // Gamification + Recurring Backend Boot
+  // Gamification + Recurring Backend Boot + Security Lock
   const processRecurringTransactions = useFinanceStore(state => state.processRecurringTransactions);
+  const lockApp = useFinanceStore(state => state.lockApp);
 
   useEffect(() => {
     initNativeListeners();
@@ -44,8 +46,9 @@ function App() {
           selectedTheme: useFinanceStore.getState().theme,
         });
         
-        // Boot up systems
+        // Boot up systems & security lock
         processRecurringTransactions?.();
+        lockApp();
         setShowWelcome(true);
       } else {
         await setUser(null);
@@ -53,7 +56,7 @@ function App() {
       setAuthReady(true);
     });
     return () => unsubscribe();
-  }, [setUser, processRecurringTransactions]);
+  }, [setUser, processRecurringTransactions, lockApp]);
 
   if (!authReady) {
     return (
@@ -107,6 +110,8 @@ function App() {
             setEditingTx(null);
           }}
         />
+
+        <SecurityLockOverlay />
       </div>
     </BrowserRouter>
   );

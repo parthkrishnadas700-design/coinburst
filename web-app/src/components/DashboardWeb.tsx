@@ -8,11 +8,13 @@ import {
 } from 'recharts';
 import { 
   Plus, Trash2, ArrowUpRight, ArrowDownRight, Search, ChevronDown, 
-  TrendingUp, PiggyBank, Bot, Download, Sparkles, Pencil
+  TrendingUp, PiggyBank, Bot, Download, Sparkles, Pencil,
+  Shield, Lock
 } from 'lucide-react';
 import { generateAIResponse } from '../utils/aiCommandEngine';
 import { AboutWeb } from './AboutWeb';
 import { CalendarChartColumn } from './CalendarChartColumn';
+import { WalletSlidebar } from './WalletSlidebar';
 
 // --- Theme Helper Hooks ---
 export const useThemeStyles = () => {
@@ -456,7 +458,6 @@ export const DashboardWeb: React.FC<{
   const transactions = useFinanceStore((state) => state.transactions);
   const budgets = useFinanceStore((state) => state.budgets);
   const selectedAccountId = useFinanceStore((state) => state.selectedAccountId);
-  const setSelectedAccountId = useFinanceStore((state) => state.setSelectedAccountId);
   const addTransaction = useFinanceStore((state) => state.addTransaction);
   const deleteTransaction = useFinanceStore((state) => state.deleteTransaction);
   const addAccount = useFinanceStore((state) => state.addAccount);
@@ -466,6 +467,12 @@ export const DashboardWeb: React.FC<{
 
   const user = useFinanceStore((state) => state.user);
   const updateUserProfile = useFinanceStore((state) => state.updateUserProfile);
+
+  const isPinEnabled = useFinanceStore((state) => state.isPinEnabled);
+  const setSecurityPin = useFinanceStore((state) => state.setSecurityPin);
+  const lockApp = useFinanceStore((state) => state.lockApp);
+
+  const [newPinInput, setNewPinInput] = useState('');
 
   // Profile editing
   const [editName, setEditName] = useState('');
@@ -930,73 +937,8 @@ export const DashboardWeb: React.FC<{
             {activePage === 'dashboard' && (
               <div className="flex flex-col lg:flex-row gap-8 items-start w-full">
                 <div className="flex-1 space-y-8 w-full">
-                {/* Account Picker */}
+                {/* Cards */}
                 <section>
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-bold tracking-wide">My Wallet Nodes</h3>
-                    <button
-                      onClick={() => setShowAddAccount(true)}
-                      className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold ${cStyles.primaryBtnOutline}`}
-                    >
-                      <Plus className="w-4 h-4" /> Add Wallet
-                    </button>
-                  </div>
-
-                  {accounts.length === 0 ? (
-                    <div className={`p-8 rounded-2xl text-center ${cStyles.cardBg} ${cStyles.shadow}`}>
-                      <p className="text-gray-400 text-sm mb-3">No wallet nodes yet. Create your first account to start tracking.</p>
-                      <button
-                        onClick={() => setShowAddAccount(true)}
-                        className={`px-5 py-2.5 rounded-xl text-xs font-bold ${cStyles.primaryBtn}`}
-                      >
-                        <Plus className="w-4 h-4 inline mr-1" /> Create First Wallet
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex gap-3 overflow-x-auto pb-4">
-                      <button
-                        onClick={() => setSelectedAccountId(null)}
-                        className={`px-5 py-2.5 rounded-full font-bold text-xs uppercase tracking-widest transition-all duration-300 border cursor-pointer whitespace-nowrap ${
-                          selectedAccountId === null
-                            ? cStyles.walletBtnAllSelected
-                            : cStyles.walletBtnUnselected
-                        }`}
-                      >
-                        All Wallets
-                      </button>
-                      {accounts.map((acc) => (
-                        <div key={acc.id} className="relative group flex-shrink-0">
-                          <button
-                            onClick={() => setSelectedAccountId(acc.id)}
-                            className={`px-5 py-2.5 rounded-full font-bold text-xs uppercase tracking-widest transition-all duration-300 border flex items-center gap-2 cursor-pointer pr-8 ${
-                              selectedAccountId === acc.id
-                                ? 'bg-opacity-100 text-white shadow-lg'
-                                : cStyles.walletBtnUnselected
-                            }`}
-                            style={{
-                              backgroundColor: selectedAccountId === acc.id ? acc.color : undefined,
-                              borderColor: acc.color,
-                            }}
-                          >
-                            <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                            {acc.name} ({fmt(acc.balance)})
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (window.confirm(`Delete "${acc.name}" and all its transactions?`)) {
-                                deleteAccount(acc.id);
-                              }
-                            }}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 text-white/60 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Cards */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-2">
                     <motion.div whileHover={{ scale: 1.02 }} className={`p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow} relative overflow-hidden`}>
                       <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl" />
@@ -1224,6 +1166,11 @@ export const DashboardWeb: React.FC<{
 
             {activePage === 'transactions' && (
               <div className="space-y-8">
+                {/* Dedicated Wallets Seekbar & Funds Section */}
+                <section>
+                  <WalletSlidebar onOpenAddWallet={() => setShowAddAccount(true)} />
+                </section>
+
                 <div className={`p-4 sm:p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow}`}>
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                     <h3 className="text-base sm:text-lg font-black">Full Transactions Vault Ledger</h3>
@@ -1611,6 +1558,74 @@ export const DashboardWeb: React.FC<{
                     ))}
                   </div>
                 </div>
+
+                {/* 4. Security & Passcode Lock Panel */}
+                <div className={`p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow}`}>
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                        <Shield className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-black tracking-wide">App Security & Passcode Lock</h3>
+                        <p className="text-xs text-gray-400">Require a 4-digit PIN to access financial ledgers and balances.</p>
+                      </div>
+                    </div>
+
+                    {isPinEnabled && (
+                      <button
+                        onClick={lockApp}
+                        className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 ${cStyles.primaryBtnOutline}`}
+                      >
+                        <Lock className="w-4 h-4" /> Lock App Now
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-black/30 border border-gray-800/60 max-w-xl space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-gray-300">Security PIN Protection</span>
+                      <span className={`text-xs font-mono font-bold px-2.5 py-0.5 rounded-full ${isPinEnabled ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-gray-800 text-gray-400'}`}>
+                        {isPinEnabled ? '✓ ENABLED' : 'DISABLED'}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <input
+                        type="password"
+                        maxLength={4}
+                        placeholder="Enter 4-digit PIN"
+                        value={newPinInput}
+                        onChange={(e) => setNewPinInput(e.target.value.replace(/\D/g, ''))}
+                        className={`px-4 py-2.5 rounded-xl font-mono text-sm font-bold flex-1 ${cStyles.input}`}
+                      />
+                      <button
+                        onClick={() => {
+                          if (newPinInput.length === 4) {
+                            setSecurityPin(newPinInput);
+                            setNewPinInput('');
+                          }
+                        }}
+                        disabled={newPinInput.length !== 4}
+                        className={`px-5 py-2.5 rounded-xl font-bold text-xs disabled:opacity-40 transition-all ${cStyles.primaryBtn}`}
+                      >
+                        {isPinEnabled ? 'Update PIN' : 'Enable 4-Digit PIN'}
+                      </button>
+
+                      {isPinEnabled && (
+                        <button
+                          onClick={() => {
+                            setSecurityPin(null);
+                            setNewPinInput('');
+                          }}
+                          className="px-4 py-2.5 rounded-xl font-bold text-xs bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 transition-colors cursor-pointer"
+                        >
+                          Disable PIN
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -1833,7 +1848,7 @@ export const DashboardWeb: React.FC<{
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Initial Balance ($)</label>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Initial Balance</label>
                     <input
                       required type="number" step="0.01"
                       value={newAccBalance} onChange={e => setNewAccBalance(e.target.value)}
@@ -1900,7 +1915,7 @@ export const DashboardWeb: React.FC<{
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Monthly Limit ($)</label>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Monthly Limit</label>
                     <input
                       required type="number" step="0.01" min="1"
                       value={newBudgetLimit} onChange={e => setNewBudgetLimit(e.target.value)}
