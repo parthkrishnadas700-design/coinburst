@@ -170,7 +170,7 @@ Format your responses using Markdown. Be concise, helpful, and adopt a sleek, sl
 
     try {
       const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash',
+        model: 'gemini-2.5-flash',
         contents: message,
         config: {
           tools: tools as any,
