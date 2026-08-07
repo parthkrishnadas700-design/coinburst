@@ -46,10 +46,8 @@ export const Layout: React.FC = () => {
         <div>
           <div className="p-6 border-b border-gray-800/50 flex justify-between items-center gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#FF007F] via-[#00FF88] to-[#00E5FF] p-[2px] animate-pulse">
-                <div className="w-full h-full bg-[#0B0B0F] rounded-xl flex items-center justify-center">
-                  <span className="font-['Poppins'] font-black text-xl text-white">CB</span>
-                </div>
+              <div className="w-10 h-10 flex items-center justify-center">
+                <img src="/assets/coinburst_logo.png" alt="CoinBurst Logo" className="w-full h-full object-contain" />
               </div>
               <div>
                 <h1 className="font-['Poppins'] font-black text-lg tracking-wider">COINBURST</h1>

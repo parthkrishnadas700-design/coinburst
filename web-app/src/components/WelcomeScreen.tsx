@@ -59,11 +59,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ userName, onComple
               initial={{ scale: 0, rotate: -180 }}
               animate={{ scale: 1, rotate: 0 }}
               transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.2 }}
-              className="w-24 h-24 rounded-3xl bg-gradient-to-tr from-[#FF007F] via-[#00FF88] to-[#00E5FF] p-[3px] shadow-[0_0_60px_rgba(0,255,136,0.3)]"
+              className="w-24 h-24"
             >
-              <div className="w-full h-full bg-[#0B0B0F] rounded-3xl flex items-center justify-center">
-                <span className="font-['Poppins'] font-black text-4xl text-white">CB</span>
-              </div>
+              <img src="/assets/coinburst_logo.png" alt="CoinBurst Logo" className="w-full h-full object-contain" />
             </motion.div>
 
             {/* Welcome Text */}
