@@ -61,7 +61,7 @@ Answer the user concisely and helpfully in markdown. User Query: "${message}"`;
   for (let attempt = 0; attempt < totalKeys; attempt++) {
     const keyIdx = (currentKeyIndex + attempt) % totalKeys;
     const apiKey = keys[keyIdx];
-    const modelsToTry = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash'];
+    const modelsToTry = ['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.0-flash-lite', 'gemini-pro-latest'];
 
     for (const modelName of modelsToTry) {
       try {

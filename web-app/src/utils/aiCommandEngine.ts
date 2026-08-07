@@ -167,7 +167,7 @@ Format your responses using Markdown. Be concise, helpful, and adopt a sleek, sl
     const keyIdx = (currentKeyIndex + attempt) % totalKeys;
     const apiKey = keys[keyIdx];
     const ai = new GoogleGenAI({ apiKey });
-    const modelsToTry = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash'];
+    const modelsToTry = ['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.0-flash-lite', 'gemini-pro-latest'];
 
     for (const modelName of modelsToTry) {
       try {
