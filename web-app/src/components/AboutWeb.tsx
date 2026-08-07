@@ -65,7 +65,7 @@ export const AboutWeb: React.FC = () => {
       color: 'from-pink-500 to-purple-500',
       accentColor: 'text-pink-400',
       summary: 'Set spending caps per category and receive automated visual guardrail warnings.',
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
+      videoUrl: '/videos/3rd tutorial CB.mp4',
       steps: [
         'Open "Smart Budgets" tab.',
         'Set monthly budget caps for individual categories (e.g., ₹5,000 for Groceries).',
