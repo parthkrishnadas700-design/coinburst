@@ -9,7 +9,7 @@ import {
 import { 
   Plus, Trash2, ArrowUpRight, ArrowDownRight, Search, ChevronDown, 
   TrendingUp, PiggyBank, Bot, Download, Sparkles, Pencil,
-  Shield, Lock
+  Shield, Lock, Upload, Database
 } from 'lucide-react';
 import { generateAIResponse } from '../utils/aiCommandEngine';
 import { AboutWeb } from './AboutWeb';
@@ -471,8 +471,11 @@ export const DashboardWeb: React.FC<{
   const isPinEnabled = useFinanceStore((state) => state.isPinEnabled);
   const setSecurityPin = useFinanceStore((state) => state.setSecurityPin);
   const lockApp = useFinanceStore((state) => state.lockApp);
+  const exportData = useFinanceStore((state) => state.exportData);
+  const importData = useFinanceStore((state) => state.importData);
 
   const [newPinInput, setNewPinInput] = useState('');
+  const [backupMessage, setBackupMessage] = useState('');
 
   // Profile editing
   const [editName, setEditName] = useState('');
@@ -1639,6 +1642,92 @@ export const DashboardWeb: React.FC<{
                       )}
                     </div>
                   </div>
+                </div>
+
+                {/* 5. Data Backup & System Restore Panel */}
+                <div className={`p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow}`}>
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 rounded-2xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+                        <Database className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-black tracking-wide">Data Backup & System Restore</h3>
+                        <p className="text-xs text-gray-400">Export your complete financial records to a JSON backup file or restore from a previous backup.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl">
+                    {/* Export Card */}
+                    <div className={`p-5 rounded-xl border border-gray-800/60 ${cStyles.ledgerFeedBg} flex flex-col justify-between space-y-4`}>
+                      <div>
+                        <div className="flex items-center gap-2 font-bold text-sm text-gray-200 mb-1">
+                          <Download className="w-4 h-4 text-emerald-400" /> Export JSON Backup
+                        </div>
+                        <p className="text-xs text-gray-400">Download a full JSON file containing all accounts, transactions, budgets, currency, and theme settings.</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          if (exportData) {
+                            const dataStr = exportData();
+                            const blob = new Blob([dataStr], { type: 'application/json' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `coinburst-backup-${new Date().toISOString().split('T')[0]}.json`;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                            setBackupMessage('✓ Backup exported successfully!');
+                            setTimeout(() => setBackupMessage(''), 4000);
+                          }
+                        }}
+                        className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 ${cStyles.primaryBtn}`}
+                      >
+                        <Download className="w-4 h-4" /> Download Backup File
+                      </button>
+                    </div>
+
+                    {/* Import Card */}
+                    <div className={`p-5 rounded-xl border border-gray-800/60 ${cStyles.ledgerFeedBg} flex flex-col justify-between space-y-4`}>
+                      <div>
+                        <div className="flex items-center gap-2 font-bold text-sm text-gray-200 mb-1">
+                          <Upload className="w-4 h-4 text-cyan-400" /> Restore from JSON Backup
+                        </div>
+                        <p className="text-xs text-gray-400">Select a CoinBurst backup JSON file to restore your accounts, ledger history, and budgets.</p>
+                      </div>
+                      <div>
+                        <label className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10 cursor-pointer transition-colors`}>
+                          <Upload className="w-4 h-4" /> Choose JSON File & Restore
+                          <input
+                            type="file"
+                            accept=".json,application/json"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              const reader = new FileReader();
+                              reader.onload = (event) => {
+                                const content = event.target?.result as string;
+                                if (content && importData) {
+                                  importData(content);
+                                  setBackupMessage('✓ Application state successfully restored!');
+                                  setTimeout(() => setBackupMessage(''), 4000);
+                                }
+                              };
+                              reader.readAsText(file);
+                            }}
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {backupMessage && (
+                    <div className="mt-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center gap-2 animate-pulse">
+                      <span>{backupMessage}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

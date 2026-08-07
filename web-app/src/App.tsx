@@ -7,7 +7,7 @@ import { Layout } from './pages/Layout';
 import { Dashboard } from './pages/Dashboard';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { SecurityLockOverlay } from './components/SecurityLockOverlay';
-import { auth } from './shared/firebase';
+import { auth, handleGoogleRedirectResult } from './shared/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useFinanceStore } from './shared/useFinanceStore';
 import type { Transaction } from './shared/useFinanceStore';
@@ -37,23 +37,43 @@ function App() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        await setUser({
-          uid: firebaseUser.uid,
-          email: firebaseUser.email || '',
-          displayName: firebaseUser.displayName || 'Wealth Builder',
-          photoURL: firebaseUser.photoURL || undefined,
-          selectedTheme: useFinanceStore.getState().theme,
-        });
-        
-        // Boot up systems & security lock
-        processRecurringTransactions?.();
-        lockApp();
-        setShowWelcome(true);
-      } else {
-        await setUser(null);
+      try {
+        if (firebaseUser) {
+          await setUser({
+            uid: firebaseUser.uid,
+            email: firebaseUser.email || '',
+            displayName: firebaseUser.displayName || 'Wealth Builder',
+            photoURL: firebaseUser.photoURL || undefined,
+            selectedTheme: useFinanceStore.getState().theme,
+          });
+          
+          // Boot up systems & security lock
+          processRecurringTransactions?.();
+          lockApp();
+          setShowWelcome(true);
+        } else {
+          // Attempt to handle redirect result if no user yet
+          const redirectUser = await handleGoogleRedirectResult();
+          if (redirectUser) {
+            await setUser({
+              uid: redirectUser.uid,
+              email: redirectUser.email || '',
+              displayName: redirectUser.displayName || 'Wealth Builder',
+              photoURL: redirectUser.photoURL || undefined,
+              selectedTheme: useFinanceStore.getState().theme,
+            });
+            processRecurringTransactions?.();
+            lockApp();
+            setShowWelcome(true);
+          } else {
+            await setUser(null);
+          }
+        }
+      } catch (error) {
+        console.error("Auth initialization error:", error);
+      } finally {
+        setAuthReady(true);
       }
-      setAuthReady(true);
     });
     return () => unsubscribe();
   }, [setUser, processRecurringTransactions, lockApp]);

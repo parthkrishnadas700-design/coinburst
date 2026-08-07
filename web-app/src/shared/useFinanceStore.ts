@@ -126,6 +126,8 @@ interface FinanceState {
   checkStreak?: () => void;
   processRecurringTransactions?: () => void;
   allocateBudgetAmount?: (budgetId: string, amount: number) => void;
+  exportData?: () => string;
+  importData?: (jsonStr: string) => void;
 }
 
 const getCurrentMonthString = (dateStr?: string) => {
@@ -473,6 +475,45 @@ export const useFinanceStore = create<FinanceState>()(
           theme: data.theme ?? state.theme,
           currency: data.currency ?? state.currency,
         }));
+      },
+      // Export current finance data as JSON string
+      exportData: () => {
+        const state = get();
+        const exportObj = {
+          accounts: state.accounts,
+          transactions: state.transactions,
+          budgets: state.budgets,
+          theme: state.theme,
+          currency: state.currency,
+        };
+        return JSON.stringify(exportObj, null, 2);
+      },
+      // Import finance data from JSON string and sync store + Firebase
+      importData: (jsonStr) => {
+        try {
+          const data = JSON.parse(jsonStr);
+          // Basic validation
+          if (!data.accounts || !data.transactions || !data.budgets) {
+            console.error('[CoinBurst] Invalid import data');
+            return;
+          }
+          // Sync local store
+          set(state => ({
+            accounts: data.accounts,
+            transactions: data.transactions,
+            budgets: data.budgets,
+            theme: data.theme ?? state.theme,
+            currency: data.currency ?? state.currency,
+          }));
+          // If user logged in, persist to Firebase
+          const { user } = get();
+          if (user) {
+            // Reuse internal helper to save state
+            saveStateToFirebase(user.uid, data.accounts, data.transactions, data.budgets, data.theme ?? state.theme, data.currency ?? state.currency);
+          }
+        } catch (e) {
+          console.error('[CoinBurst] Import failed:', e);
+        }
       },
 
       // ── Auth / Firebase Load ──────────────────────────────────────────────────

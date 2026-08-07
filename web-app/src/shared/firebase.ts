@@ -6,7 +6,9 @@ import {
   signOut,
   updateProfile,
   signInWithEmailAndPassword,
-  createUserWithEmailAndPassword
+  createUserWithEmailAndPassword,
+  signInWithRedirect,
+  getRedirectResult
 } from "firebase/auth";
 import { getDatabase } from "firebase/database";
 
@@ -33,12 +35,30 @@ googleProvider.addScope("profile");
 googleProvider.addScope("email");
 
 // Auth helper functions
+
+
+// Google Sign-In using redirect for mobile compatibility
 export const signInWithGoogle = async () => {
   try {
-    const result = await signInWithPopup(auth, googleProvider);
-    return result.user;
+    await signInWithRedirect(auth, googleProvider);
+    // The result will be handled after redirect
   } catch (error) {
-    console.error("Google Sign-In Error:", error);
+    console.error("Google Sign-In Redirect Error:", error);
+    throw error;
+  }
+};
+
+// Call this after app initialization to handle redirect result
+export const handleGoogleRedirectResult = async () => {
+  try {
+    const result = await getRedirectResult(auth);
+    if (result?.user) {
+      console.log("Google redirect sign-in success:", result.user);
+      return result.user;
+    }
+    return null;
+  } catch (error) {
+    console.error("Google Redirect Result Error:", error);
     throw error;
   }
 };
