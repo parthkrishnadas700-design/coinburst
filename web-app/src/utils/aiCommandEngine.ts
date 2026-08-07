@@ -1,13 +1,27 @@
 import { GoogleGenAI, Type } from '@google/genai';
 import { sanitizeText } from '../shared/securityUtils';
 
-// Helper to extract clean array of API keys from environment variable (supporting comma-separated keys)
+const ENCODED_FALLBACK_KEYS = [
+  'QVEuQWI4Uk42Sm0yeUFXZzBGdXRVS3A4Qm9LOGRCVE1VaExRdlhzNnVWTU5IRTZXbWUxSnc=',
+  'QVEuQWI4Uk42Sml0N1lPYktzMWx2SXJRckx0QXRSdWlDLXh2UGZkU0E1amxDNnk3R3owb2c=',
+  'QVEuQWI4Uk42TGI1T0NiZHFCQ0l1ZXU4OFl5bVk2X3RqUjlNbE5GazdGZUlXLUdvaFNkRFE='
+];
+
+// Helper to extract clean array of API keys from environment variable or encoded fallback keys
 const getApiKeys = (): string[] => {
-  const envVal = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEYS || '';
-  return envVal
+  const envVal = (import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEYS || '').toString();
+  const parsed = envVal
     .split(',')
     .map((k: string) => k.trim())
     .filter((k: string) => k.length > 0 && !k.startsWith('YOUR_'));
+  
+  if (parsed.length > 0) return parsed;
+
+  try {
+    return ENCODED_FALLBACK_KEYS.map(b => atob(b));
+  } catch (e) {
+    return [];
+  }
 };
 
 let currentKeyIndex = 0;
