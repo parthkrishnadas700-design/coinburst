@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Code, Play, Pause, 
   SlidersHorizontal, ArrowUpRight, PiggyBank, Bot, 
-  Settings, CheckCircle2, Sparkles, BookOpen
+  Settings, CheckCircle2, Sparkles, BookOpen, Video, Link, Plus, Check
 } from 'lucide-react';
 import { useThemeStyles } from './DashboardWeb';
 
@@ -11,6 +11,15 @@ export const AboutWeb: React.FC = () => {
   const cStyles = useThemeStyles();
   const [activeGuideTab, setActiveGuideTab] = useState<number>(0);
   const [isPlayingDemo, setIsPlayingDemo] = useState<boolean>(true);
+  const [videoUrls, setVideoUrls] = useState<Record<number, string>>({
+    0: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    1: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+    2: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
+    3: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+    4: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutback2012.mp4',
+  });
+  const [editingVideoIndex, setEditingVideoIndex] = useState<number | null>(null);
+  const [inputUrl, setInputUrl] = useState<string>('');
 
   const guideSteps = [
     {
@@ -28,7 +37,7 @@ export const AboutWeb: React.FC = () => {
         'Click "+ Add Money to Wallet" or choose quick preset chips (+₹500 / +₹1,000 / +₹5,000).',
         'Use the in-card "Slide & Deposit" slider to dynamically choose deposit amounts and click Deposit.'
       ],
-      videoSimText: '▶ DEMO VIDEO: Scrubbing Wallet Seekbar & Depositing Funds into Chase Savings'
+      videoSimText: 'Scrubbing Wallet Seekbar & Depositing Funds into Chase Savings'
     },
     {
       id: 2,
@@ -45,7 +54,7 @@ export const AboutWeb: React.FC = () => {
         'Assign Category (Food, Salary, Bills, Shopping) and write an optional note.',
         'Filter or search history instantly using the live search bar or delete items with confirmation.'
       ],
-      videoSimText: '▶ DEMO VIDEO: Logging Income & Expenses into Specific Wallet Nodes'
+      videoSimText: 'Logging Income & Expenses into Specific Wallet Nodes'
     },
     {
       id: 3,
@@ -61,7 +70,7 @@ export const AboutWeb: React.FC = () => {
         'Watch the Liquid Budget Bar fill up as transactions are recorded.',
         'Receive automated visual warnings when approaching or exceeding your target budget.'
       ],
-      videoSimText: '▶ DEMO VIDEO: Creating Category Limits & Liquid Progress Indicators'
+      videoSimText: 'Creating Category Limits & Liquid Progress Indicators'
     },
     {
       id: 4,
@@ -77,7 +86,7 @@ export const AboutWeb: React.FC = () => {
         'Execute account commands e.g. "Create account HDFC Bank" or "Delete last transaction".',
         'Ask financial questions e.g. "Show my spending breakdown" or "Check budgets".'
       ],
-      videoSimText: '▶ DEMO VIDEO: Using Natural Language AI Engine to Perform Ledger Actions'
+      videoSimText: 'Using Natural Language AI Engine to Perform Ledger Actions'
     },
     {
       id: 5,
@@ -93,11 +102,55 @@ export const AboutWeb: React.FC = () => {
         'Switch theme presets: Dark Mode, Minimal Light, Cyberpunk Neon, Glassmorphism, Forest, or Synthwave.',
         'Profile changes sync automatically across all logged-in devices via Firebase.'
       ],
-      videoSimText: '▶ DEMO VIDEO: Changing Theme Styles and Currency Formats in Real-Time'
+      videoSimText: 'Changing Theme Styles and Currency Formats in Real-Time'
     }
   ];
 
   const currentStep = guideSteps[activeGuideTab];
+  const currentVideoUrl = videoUrls[activeGuideTab] || '';
+
+  const handleSaveVideoUrl = () => {
+    if (inputUrl.trim()) {
+      setVideoUrls(prev => ({ ...prev, [activeGuideTab]: inputUrl.trim() }));
+    }
+    setEditingVideoIndex(null);
+    setInputUrl('');
+  };
+
+  const renderVideoPlayer = (url: string, title: string) => {
+    if (!url) return null;
+
+    // Check YouTube link
+    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+      let videoId = '';
+      if (url.includes('youtu.be/')) {
+        videoId = url.split('youtu.be/')[1]?.split('?')[0] || '';
+      } else if (url.includes('v=')) {
+        videoId = url.split('v=')[1]?.split('&')[0] || '';
+      }
+      return (
+        <iframe
+          src={`https://www.youtube.com/embed/${videoId}?autoplay=0`}
+          title={title}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          className="w-full aspect-video rounded-2xl border border-gray-800 shadow-2xl bg-black"
+        />
+      );
+    }
+
+    // Direct HTML5 video file (.mp4, .webm, etc.)
+    return (
+      <video
+        controls
+        key={url}
+        src={url}
+        className="w-full aspect-video rounded-2xl bg-black object-cover border border-gray-800 shadow-2xl"
+      >
+        Your browser does not support HTML5 video.
+      </video>
+    );
+  };
 
   return (
     <motion.div
@@ -125,14 +178,14 @@ export const AboutWeb: React.FC = () => {
               CoinBurst Master Guide & Video Tutorials
             </h2>
             <p className={`${cStyles.textMuted} text-xs mt-1 max-w-lg`}>
-              Complete step-by-step manual and video demonstrations to master wallets, seekbars, ledger transactions, and AI commands.
+              Complete step-by-step manual and interactive video demonstrations to master wallets, seekbars, ledger transactions, and AI commands.
             </p>
           </div>
         </div>
 
-        <div className="shrink-0 relative z-10">
+        <div className="shrink-0 relative z-10 flex flex-col items-end gap-2">
           <span className="px-4 py-2 rounded-xl text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-            Version 2.5 • Live Build
+            Version 2.5 • Video Enabled
           </span>
         </div>
       </div>
@@ -145,7 +198,10 @@ export const AboutWeb: React.FC = () => {
           return (
             <button
               key={step.id}
-              onClick={() => setActiveGuideTab(idx)}
+              onClick={() => {
+                setActiveGuideTab(idx);
+                setEditingVideoIndex(null);
+              }}
               className={`px-4 py-3 rounded-2xl text-xs font-bold transition-all duration-300 border flex items-center gap-2.5 cursor-pointer whitespace-nowrap ${
                 isActive
                   ? 'bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 text-white border-emerald-400 shadow-lg scale-102'
@@ -185,40 +241,64 @@ export const AboutWeb: React.FC = () => {
                 <p className="text-xs text-gray-400 mt-1">{currentStep.summary}</p>
               </div>
             </div>
+
+            {/* Custom Video Embed Control Button */}
+            <button
+              onClick={() => {
+                setEditingVideoIndex(editingVideoIndex === activeGuideTab ? null : activeGuideTab);
+                setInputUrl(currentVideoUrl);
+              }}
+              className="px-3.5 py-2 rounded-xl text-xs font-bold bg-white/5 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all flex items-center gap-2 cursor-pointer"
+            >
+              <Video className="w-4 h-4" />
+              <span>{editingVideoIndex === activeGuideTab ? 'Cancel Edit' : '🎥 Change Video URL'}</span>
+            </button>
           </div>
 
-          {/* Simulated Video Player Box */}
+          {/* Edit Video URL Bar */}
+          {editingVideoIndex === activeGuideTab && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="p-4 rounded-2xl bg-emerald-950/30 border border-emerald-500/30 space-y-3"
+            >
+              <label className="text-xs font-bold text-emerald-300 flex items-center gap-2">
+                <Link className="w-3.5 h-3.5" /> Paste Video Link (MP4 Direct URL or YouTube Watch Link):
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={inputUrl}
+                  onChange={(e) => setInputUrl(e.target.value)}
+                  placeholder="e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ or https://domain.com/video.mp4"
+                  className="flex-1 px-4 py-2 rounded-xl bg-black/60 border border-gray-700 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-400"
+                />
+                <button
+                  onClick={handleSaveVideoUrl}
+                  className="px-4 py-2 rounded-xl text-xs font-black bg-emerald-500 hover:bg-emerald-400 text-black flex items-center gap-1.5 cursor-pointer shadow-lg"
+                >
+                  <Check className="w-4 h-4" /> Save Video
+                </button>
+              </div>
+              <p className="text-[11px] text-gray-400">
+                Supports YouTube links (`youtube.com/watch?v=...`), YouTube Shorts, or direct `.mp4` video files.
+              </p>
+            </motion.div>
+          )}
+
+          {/* Video Player Box */}
           <div className="relative rounded-2xl overflow-hidden border border-gray-800 bg-black/80 shadow-2xl group">
             {/* Video Canvas Header Bar */}
-            <div className="px-4 py-2.5 bg-black/60 border-b border-gray-800 flex items-center justify-between text-xs text-gray-400 font-mono">
+            <div className="px-4 py-2.5 bg-black/80 border-b border-gray-800 flex items-center justify-between text-xs text-gray-400 font-mono">
               <span className="flex items-center gap-2 text-emerald-400 font-bold">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" /> Interactive Demo Video
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" /> Video Player • {currentStep.videoSimText}
               </span>
-              <span>HD 1080p • 60 FPS</span>
+              <span>HD 1080p • Live Stream</span>
             </div>
 
-            {/* Video Display Area */}
-            <div className="p-8 sm:p-12 flex flex-col items-center justify-center text-center relative min-h-[220px] bg-gradient-to-b from-gray-900/40 via-black to-gray-900/60">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center text-black shadow-xl shadow-emerald-500/30 mb-4 cursor-pointer hover:scale-110 transition-transform"
-                   onClick={() => setIsPlayingDemo(!isPlayingDemo)}>
-                {isPlayingDemo ? <Pause className="w-7 h-7 fill-black" /> : <Play className="w-7 h-7 fill-black ml-1" />}
-              </div>
-
-              <h4 className="text-sm sm:text-base font-bold text-white max-w-md">
-                {currentStep.videoSimText}
-              </h4>
-              <p className="text-xs text-gray-400 mt-2">
-                {isPlayingDemo ? '⚡ Video playback active — follow the step guide below' : '⏸ Click play button to start video demonstration'}
-              </p>
-
-              {/* Video Timeline Bar */}
-              <div className="w-full max-w-lg bg-gray-800 h-1.5 rounded-full mt-6 overflow-hidden">
-                <motion.div
-                  animate={isPlayingDemo ? { width: ['0%', '100%'] } : { width: '45%' }}
-                  transition={isPlayingDemo ? { repeat: Infinity, duration: 6, ease: 'linear' } : { duration: 0 }}
-                  className="h-full bg-gradient-to-r from-emerald-400 to-cyan-400"
-                />
-              </div>
+            {/* Video Player Element */}
+            <div className="p-2 sm:p-4 bg-black">
+              {renderVideoPlayer(currentVideoUrl, currentStep.title)}
             </div>
           </div>
 
