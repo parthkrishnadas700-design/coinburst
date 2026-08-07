@@ -49,7 +49,7 @@ export const AboutWeb: React.FC = () => {
       color: 'from-blue-500 to-indigo-500',
       accentColor: 'text-blue-400',
       summary: 'Track income, expenses, categories, and account allocations in real time.',
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+      videoUrl: '/videos/2nd tutorial CB.mp4',
       steps: [
         'Open "Ledger & Entry" from the sidebar.',
         'Click "+ Add Transaction" to launch the entry wizard.',
