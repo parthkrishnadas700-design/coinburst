@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Code, 
-  SlidersHorizontal, ArrowUpRight, PiggyBank, Bot, 
+  SlidersHorizontal, ArrowUpRight, PiggyBank, Bot, Settings,
   CheckCircle2, Sparkles, BookOpen, FileVideo
 } from 'lucide-react';
 import { useThemeStyles } from './DashboardWeb';
@@ -23,7 +23,7 @@ export const AboutWeb: React.FC = () => {
   const cStyles = useThemeStyles();
   const [activeVideoIndex, setActiveVideoIndex] = useState<number>(0);
 
-  // Exactly 4 primary video tutorials
+  // 5 primary video tutorials
   const videoTutorials: VideoGuideItem[] = [
     {
       id: 1,
@@ -81,12 +81,28 @@ export const AboutWeb: React.FC = () => {
       color: 'from-amber-500 to-orange-500',
       accentColor: 'text-amber-400',
       summary: 'Control your entire workspace using natural language AI instructions.',
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+      videoUrl: '/videos/4th tutorial CB.mp4',
       steps: [
         'Click "AI Advisor" in the left navigation panel.',
         'Type or dictate instructions like: "Add expense 500 Food" or "Log income 10000 Salary".',
         'Execute account commands e.g. "Create account HDFC Bank" or "Delete last transaction".',
         'Ask financial questions e.g. "Show my spending breakdown" or "Check budgets".'
+      ]
+    },
+    {
+      id: 5,
+      title: '5. User Theme & Multi-Currency Settings',
+      badge: 'Video Tutorial 5',
+      icon: Settings,
+      color: 'from-cyan-500 to-emerald-500',
+      accentColor: 'text-cyan-400',
+      summary: 'Personalize your display currency (INR, USD, EUR, etc.) and visual theme presets in real-time.',
+      videoUrl: '/videos/5th tutorial CB.mp4',
+      steps: [
+        'Navigate to "User Theme & Preferences" in Settings.',
+        'Select your preferred currency (INR ₹, USD $, EUR €, GBP £, JPY ¥, AED, CAD, AUD).',
+        'Switch visual theme presets: Dark Mode, Minimal Light, Cyberpunk Neon, Glassmorphism, Forest, or Synthwave.',
+        'Profile changes sync automatically across all logged-in devices via Firebase Cloud Sync.'
       ]
     }
   ];
@@ -150,23 +166,23 @@ export const AboutWeb: React.FC = () => {
               <Sparkles className="w-3 h-3" /> Application Interactive Guide
             </span>
             <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white mt-0.5">
-              CoinBurst Official 4 Video Tutorials
+              CoinBurst Official 5 Video Tutorials
             </h2>
             <p className={`${cStyles.textMuted} text-xs mt-1 max-w-lg`}>
-              Watch step-by-step video demonstrations to master wallets, seekbars, ledger transactions, and AI commands.
+              Watch step-by-step video demonstrations to master wallets, seekbars, ledger transactions, AI commands, and user themes.
             </p>
           </div>
         </div>
 
         <div className="shrink-0 relative z-10 flex flex-col items-end gap-2">
           <span className="px-4 py-2 rounded-xl text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-            Version 2.5 • 4 Video Series
+            Version 2.5 • 5 Video Series
           </span>
         </div>
       </div>
 
-      {/* 4 Standalone Video Selection Tabs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+      {/* 5 Standalone Video Selection Tabs */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-5 gap-3">
         {videoTutorials.map((video, idx) => {
           const Icon = video.icon;
           const isActive = activeVideoIndex === idx;
@@ -233,7 +249,7 @@ export const AboutWeb: React.FC = () => {
                 <FileVideo className="w-4 h-4" /> Now Playing: {currentVideo.title}
               </span>
               <span className="text-[11px] bg-emerald-500/20 text-emerald-300 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
-                Video {activeVideoIndex + 1} of 4
+                Video {activeVideoIndex + 1} of 5
               </span>
             </div>
 
