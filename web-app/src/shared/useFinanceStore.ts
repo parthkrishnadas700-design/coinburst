@@ -553,10 +553,10 @@ export const useFinanceStore = create<FinanceState>()(
             currency: data.currency ?? state.currency,
           }));
           // If user logged in, persist to Firebase
-          const { user } = get();
+          const { user, theme, currency } = get();
           if (user) {
             // Reuse internal helper to save state
-            saveStateToFirebase(user.uid, data.accounts, data.transactions, data.budgets, data.theme ?? state.theme, data.currency ?? state.currency);
+            saveStateToFirebase(user.uid, data.accounts, data.transactions, data.budgets, data.theme ?? theme, data.currency ?? currency);
           }
         } catch (e) {
           console.error('[CoinBurst] Import failed:', e);
