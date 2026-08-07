@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Code, Play, Pause, 
+  Code, 
   SlidersHorizontal, ArrowUpRight, PiggyBank, Bot, 
-  Settings, CheckCircle2, Sparkles, BookOpen, Video, Link, Plus, Check
+  Settings, CheckCircle2, Sparkles, BookOpen, Video, Link, Check
 } from 'lucide-react';
 import { useThemeStyles } from './DashboardWeb';
 
 export const AboutWeb: React.FC = () => {
   const cStyles = useThemeStyles();
   const [activeGuideTab, setActiveGuideTab] = useState<number>(0);
-  const [isPlayingDemo, setIsPlayingDemo] = useState<boolean>(true);
   const [videoUrls, setVideoUrls] = useState<Record<number, string>>({
     0: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
     1: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
