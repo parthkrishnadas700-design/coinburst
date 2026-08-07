@@ -24,7 +24,16 @@ export const LandingPage: React.FC = () => {
       audio.volume = 0.4;
       audio.play().catch(() => {});
     } catch (err: any) {
-      setError(err.message || 'Google Authentication failed.');
+      console.error("Google Sign-In error:", err);
+      if (err.code === 'auth/unauthorized-domain') {
+        setError('Domain not authorized in Firebase Console. Please add this domain to Firebase Auth -> Settings -> Authorized Domains.');
+      } else if (err.code === 'auth/popup-closed-by-user') {
+        setError('Google Sign-In popup was closed. Please try again.');
+      } else if (err.code === 'auth/popup-blocked') {
+        setError('Google Sign-In popup was blocked by your browser. Please enable popups.');
+      } else {
+        setError(err.message || 'Google Authentication failed.');
+      }
     } finally {
       setLoading(false);
     }

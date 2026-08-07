@@ -37,14 +37,22 @@ googleProvider.addScope("email");
 // Auth helper functions
 
 
-// Google Sign-In using redirect for mobile compatibility
+// Google Sign-In with Popup first, fallback to Redirect for mobile/blocked popups
 export const signInWithGoogle = async () => {
   try {
-    await signInWithRedirect(auth, googleProvider);
-    // The result will be handled after redirect
-  } catch (error) {
-    console.error("Google Sign-In Redirect Error:", error);
-    throw error;
+    const result = await signInWithPopup(auth, googleProvider);
+    return result.user;
+  } catch (error: any) {
+    console.warn("Google Sign-In Popup failed or blocked, attempting redirect...", error);
+    if (
+      error.code === 'auth/popup-blocked' ||
+      error.code === 'auth/popup-closed-by-user' ||
+      error.code === 'auth/cancelled-popup-request'
+    ) {
+      await signInWithRedirect(auth, googleProvider);
+    } else {
+      throw error;
+    }
   }
 };
 
