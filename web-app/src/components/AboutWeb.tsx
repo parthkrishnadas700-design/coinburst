@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Code, 
   SlidersHorizontal, ArrowUpRight, PiggyBank, Bot, 
-  Settings, CheckCircle2, Sparkles, BookOpen, Video, Link, Check
+  Settings, CheckCircle2, Sparkles, BookOpen, Link, Check, Upload, FileVideo
 } from 'lucide-react';
 import { useThemeStyles } from './DashboardWeb';
 
 export const AboutWeb: React.FC = () => {
   const cStyles = useThemeStyles();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeGuideTab, setActiveGuideTab] = useState<number>(0);
   const [videoUrls, setVideoUrls] = useState<Record<number, string>>({
     0: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
@@ -116,6 +117,15 @@ export const AboutWeb: React.FC = () => {
     setInputUrl('');
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const localBlobUrl = URL.createObjectURL(file);
+      setVideoUrls(prev => ({ ...prev, [activeGuideTab]: localBlobUrl }));
+      setEditingVideoIndex(null);
+    }
+  };
+
   const renderVideoPlayer = (url: string, title: string) => {
     if (!url) return null;
 
@@ -138,10 +148,11 @@ export const AboutWeb: React.FC = () => {
       );
     }
 
-    // Direct HTML5 video file (.mp4, .webm, etc.)
+    // Direct HTML5 video file (.mp4, .webm, blob, etc.)
     return (
       <video
         controls
+        autoPlay
         key={url}
         src={url}
         className="w-full aspect-video rounded-2xl bg-black object-cover border border-gray-800 shadow-2xl"
@@ -158,6 +169,15 @@ export const AboutWeb: React.FC = () => {
       transition={{ duration: 0.5 }}
       className="space-y-8 max-w-5xl mx-auto pb-12"
     >
+      {/* Hidden File Input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        accept="video/*"
+        onChange={handleFileUpload}
+        className="hidden"
+      />
+
       {/* Hero Header */}
       <div className={`p-8 rounded-3xl ${cStyles.cardBg} ${cStyles.shadow} relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 border`}>
         <div className="absolute top-0 right-0 w-80 h-80 bg-[#00FF88]/5 rounded-full blur-3xl pointer-events-none" />
@@ -177,14 +197,14 @@ export const AboutWeb: React.FC = () => {
               CoinBurst Master Guide & Video Tutorials
             </h2>
             <p className={`${cStyles.textMuted} text-xs mt-1 max-w-lg`}>
-              Complete step-by-step manual and interactive video demonstrations to master wallets, seekbars, ledger transactions, and AI commands.
+              Complete step-by-step manual and interactive video demonstrations. Upload local video files or paste video links.
             </p>
           </div>
         </div>
 
         <div className="shrink-0 relative z-10 flex flex-col items-end gap-2">
           <span className="px-4 py-2 rounded-xl text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-            Version 2.5 • Video Enabled
+            Version 2.5 • Direct Video Upload
           </span>
         </div>
       </div>
@@ -241,17 +261,27 @@ export const AboutWeb: React.FC = () => {
               </div>
             </div>
 
-            {/* Custom Video Embed Control Button */}
-            <button
-              onClick={() => {
-                setEditingVideoIndex(editingVideoIndex === activeGuideTab ? null : activeGuideTab);
-                setInputUrl(currentVideoUrl);
-              }}
-              className="px-3.5 py-2 rounded-xl text-xs font-bold bg-white/5 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all flex items-center gap-2 cursor-pointer"
-            >
-              <Video className="w-4 h-4" />
-              <span>{editingVideoIndex === activeGuideTab ? 'Cancel Edit' : '🎥 Change Video URL'}</span>
-            </button>
+            {/* Video Control Buttons */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-black shadow-lg transition-all flex items-center gap-2 cursor-pointer font-black"
+              >
+                <Upload className="w-4 h-4" />
+                <span>📁 Select Video from PC</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setEditingVideoIndex(editingVideoIndex === activeGuideTab ? null : activeGuideTab);
+                  setInputUrl(currentVideoUrl);
+                }}
+                className="px-3.5 py-2 rounded-xl text-xs font-bold bg-white/5 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all flex items-center gap-2 cursor-pointer"
+              >
+                <Link className="w-4 h-4" />
+                <span>{editingVideoIndex === activeGuideTab ? 'Cancel Edit' : '🔗 Paste URL'}</span>
+              </button>
+            </div>
           </div>
 
           {/* Edit Video URL Bar */}
@@ -279,9 +309,6 @@ export const AboutWeb: React.FC = () => {
                   <Check className="w-4 h-4" /> Save Video
                 </button>
               </div>
-              <p className="text-[11px] text-gray-400">
-                Supports YouTube links (`youtube.com/watch?v=...`), YouTube Shorts, or direct `.mp4` video files.
-              </p>
             </motion.div>
           )}
 
@@ -290,9 +317,11 @@ export const AboutWeb: React.FC = () => {
             {/* Video Canvas Header Bar */}
             <div className="px-4 py-2.5 bg-black/80 border-b border-gray-800 flex items-center justify-between text-xs text-gray-400 font-mono">
               <span className="flex items-center gap-2 text-emerald-400 font-bold">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" /> Video Player • {currentStep.videoSimText}
+                <FileVideo className="w-4 h-4" /> Direct Video Stream • {currentStep.videoSimText}
               </span>
-              <span>HD 1080p • Live Stream</span>
+              <span className="text-[11px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">
+                Active Player
+              </span>
             </div>
 
             {/* Video Player Element */}
