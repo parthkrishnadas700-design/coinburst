@@ -170,7 +170,7 @@ export const AboutWeb: React.FC = () => {
         autoPlay
         key={url}
         src={url}
-        className="w-full aspect-video rounded-2xl bg-black object-cover border border-gray-800 shadow-2xl"
+        className="w-full max-h-[70vh] rounded-2xl bg-black object-contain border border-gray-800 shadow-2xl mx-auto block"
       >
         Your browser does not support HTML5 video.
       </video>
