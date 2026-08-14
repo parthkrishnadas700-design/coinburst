@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { Shield, Lock, Delete, Fingerprint } from 'lucide-react';
 import { useFinanceStore } from '../shared/useFinanceStore';
 import { triggerHaptic } from '../shared/nativeBridge';
+import { Capacitor } from '@capacitor/core';
+import { NativeBiometric } from '@capgo/capacitor-native-biometric';
 
 export const SecurityLockOverlay: React.FC = () => {
   const { isLocked, verifyAndUnlock, unlockWithBiometric, isBiometricEnabled, user } = useFinanceStore();
@@ -10,30 +12,57 @@ export const SecurityLockOverlay: React.FC = () => {
   const [pinDigits, setPinDigits] = useState<string[]>([]);
   const [errorShake, setErrorShake] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [isScanning, setIsScanning] = useState<boolean>(false);
 
-  // Trigger Fingerprint scan
+  // Trigger Native Fingerprint Scan
   const handleFingerprintAuth = useCallback(async () => {
+    if (isScanning) return;
+    setIsScanning(true);
     triggerHaptic('medium');
-    try {
-      if (window.PublicKeyCredential && await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()) {
-        // Device supports native biometric / platform authenticator
-        unlockWithBiometric();
-      } else {
-        // Fallback / standard biometric unlock
-        unlockWithBiometric();
-      }
-    } catch (err) {
-      console.log('Biometric auth error/cancelled:', err);
-      setErrorMessage('Biometric scan failed. Enter PIN.');
-    }
-  }, [unlockWithBiometric]);
+    setErrorMessage('');
 
-  // Auto-prompt Fingerprint on lock if enabled
+    try {
+      if (Capacitor.isNativePlatform()) {
+        const availableResult = await NativeBiometric.isAvailable();
+        if (availableResult.isAvailable) {
+          await NativeBiometric.verifyIdentity({
+            reason: "Scan your fingerprint to unlock CoinBurst",
+            title: "CoinBurst Security Lock",
+            subtitle: "Fingerprint Authentication Required",
+            description: "Place your finger on the fingerprint sensor",
+          });
+          // ONLY unlock when native fingerprint sensor verifies identity!
+          unlockWithBiometric();
+          setIsScanning(false);
+          return;
+        } else {
+          setErrorMessage('Fingerprint sensor not available on this device. Enter PIN.');
+        }
+      } else {
+        // Web Browser WebAuthn Check
+        if (window.PublicKeyCredential && await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()) {
+          unlockWithBiometric();
+          setIsScanning(false);
+          return;
+        } else {
+          setErrorMessage('Biometrics not available in web browser. Enter PIN.');
+        }
+      }
+    } catch (err: any) {
+      console.log('Biometric auth failed or cancelled:', err);
+      setErrorShake(true);
+      setErrorMessage('Fingerprint not recognized or scan cancelled. Enter PIN.');
+      setTimeout(() => setErrorShake(false), 500);
+    }
+    setIsScanning(false);
+  }, [unlockWithBiometric, isScanning]);
+
+  // Auto-prompt Native Fingerprint scan on lock screen load ONLY if biometrics enabled
   useEffect(() => {
     if (isLocked && isBiometricEnabled) {
       const timer = setTimeout(() => {
         handleFingerprintAuth();
-      }, 300);
+      }, 400);
       return () => clearTimeout(timer);
     }
   }, [isLocked, isBiometricEnabled, handleFingerprintAuth]);
@@ -114,8 +143,8 @@ export const SecurityLockOverlay: React.FC = () => {
           })}
         </div>
 
-        {errorMessage && (
-          <p className="text-xs font-bold text-red-400 font-mono tracking-wide animate-pulse">
+        {errorMessage !== '' && (
+          <p className="text-xs font-bold text-red-400 font-mono tracking-wide animate-pulse max-w-xs">
             {errorMessage}
           </p>
         )}
@@ -135,10 +164,11 @@ export const SecurityLockOverlay: React.FC = () => {
           {/* Fingerprint Scanner Button */}
           <button
             onClick={handleFingerprintAuth}
-            className="h-14 rounded-2xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 font-bold border border-emerald-500/30 active:scale-95 transition-all cursor-pointer flex items-center justify-center"
+            disabled={isScanning}
+            className="h-14 rounded-2xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 font-bold border border-emerald-500/30 active:scale-95 transition-all cursor-pointer flex items-center justify-center disabled:opacity-50"
             title="Scan Fingerprint"
           >
-            <Fingerprint className="w-7 h-7 text-emerald-400 animate-pulse" />
+            <Fingerprint className={`w-7 h-7 text-emerald-400 ${isScanning ? 'animate-spin' : 'animate-pulse'}`} />
           </button>
 
           <button
@@ -157,19 +187,20 @@ export const SecurityLockOverlay: React.FC = () => {
           </button>
         </div>
 
-        {/* Quick Fingerprint Bar */}
+        {/* Scan Fingerprint Bar */}
         <button
           onClick={handleFingerprintAuth}
-          className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500/10 via-cyan-500/10 to-emerald-500/10 hover:from-emerald-500/20 hover:to-cyan-500/20 border border-emerald-500/30 flex items-center justify-center gap-3 active:scale-98 transition-all cursor-pointer"
+          disabled={isScanning}
+          className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500/10 via-cyan-500/10 to-emerald-500/10 hover:from-emerald-500/20 hover:to-cyan-500/20 border border-emerald-500/30 flex items-center justify-center gap-3 active:scale-98 transition-all cursor-pointer disabled:opacity-50"
         >
           <Fingerprint className="w-5 h-5 text-emerald-400" />
           <span className="text-xs font-extrabold text-emerald-300 tracking-wide">
-            Scan Fingerprint to Unlock
+            {isScanning ? 'Scanning Sensor...' : 'Scan Fingerprint Sensor'}
           </span>
         </button>
 
         <p className="text-[10px] text-gray-500 uppercase tracking-widest font-extrabold pt-1">
-          Protected with Passcode Hashing & Biometrics
+          Protected with Hardware Fingerprint Verification
         </p>
       </motion.div>
     </div>

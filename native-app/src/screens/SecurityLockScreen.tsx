@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useFinanceStore } from '../shared/useFinanceStore';
@@ -8,31 +8,40 @@ export const SecurityLockScreen: React.FC = () => {
   const { isLocked, verifyAndUnlock, unlockWithBiometric, isBiometricEnabled, user } = useFinanceStore();
   const [pinDigits, setPinDigits] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [isScanning, setIsScanning] = useState<boolean>(false);
 
   const handleFingerprintAuth = useCallback(async () => {
+    if (isScanning) return;
+    setIsScanning(true);
+    setErrorMessage('');
+
     try {
       const hasHardware = await LocalAuthentication.hasHardwareAsync();
       const isEnrolled = await LocalAuthentication.isEnrolledAsync();
 
       if (hasHardware && isEnrolled) {
         const result = await LocalAuthentication.authenticateAsync({
-          promptMessage: 'Authenticate to access CoinBurst',
+          promptMessage: 'Scan your fingerprint to unlock CoinBurst',
           fallbackLabel: 'Use PIN',
           cancelLabel: 'Cancel',
+          disableDeviceFallback: false,
         });
 
         if (result.success) {
+          // ONLY unlock when fingerprint sensor confirms match!
           unlockWithBiometric();
+        } else {
+          setErrorMessage('Fingerprint not recognized or scan cancelled.');
         }
       } else {
-        // Simulated biometric unlock for emulator/dev
-        unlockWithBiometric();
+        setErrorMessage('Biometrics not set up on device. Enter PIN.');
       }
     } catch (e) {
       console.log('Biometric auth error:', e);
-      setErrorMessage('Biometric scan failed');
+      setErrorMessage('Biometric scan failed. Enter PIN.');
     }
-  }, [unlockWithBiometric]);
+    setIsScanning(false);
+  }, [unlockWithBiometric, isScanning]);
 
   useEffect(() => {
     if (isLocked && isBiometricEnabled) {
@@ -110,7 +119,7 @@ export const SecurityLockScreen: React.FC = () => {
           ))}
 
           {/* Fingerprint Scanner Button */}
-          <TouchableOpacity onPress={handleFingerprintAuth} style={styles.fingerprintBtn} activeOpacity={0.7}>
+          <TouchableOpacity onPress={handleFingerprintAuth} disabled={isScanning} style={styles.fingerprintBtn} activeOpacity={0.7}>
             <Text style={styles.fingerprintIconText}>👆</Text>
           </TouchableOpacity>
 
@@ -124,8 +133,10 @@ export const SecurityLockScreen: React.FC = () => {
         </View>
 
         {/* Scan Fingerprint Bar */}
-        <TouchableOpacity onPress={handleFingerprintAuth} style={styles.bioBar} activeOpacity={0.8}>
-          <Text style={styles.bioBarText}>Scan Fingerprint to Unlock</Text>
+        <TouchableOpacity onPress={handleFingerprintAuth} disabled={isScanning} style={styles.bioBar} activeOpacity={0.8}>
+          <Text style={styles.bioBarText}>
+            {isScanning ? 'Scanning Sensor...' : 'Scan Fingerprint Sensor'}
+          </Text>
         </TouchableOpacity>
       </View>
     </Modal>
@@ -144,7 +155,7 @@ const styles = StyleSheet.create({
   pinDot: { width: 16, height: 16, borderRadius: 8 },
   pinDotFilled: { backgroundColor: '#00FF88', shadowColor: '#00FF88', shadowRadius: 8, elevation: 4 },
   pinDotEmpty: { backgroundColor: '#1E1E26', borderWidth: 1, borderColor: '#374151' },
-  errorText: { color: '#EF4444', fontSize: 13, fontWeight: 'bold', marginBottom: 12 },
+  errorText: { color: '#EF4444', fontSize: 13, fontWeight: 'bold', marginBottom: 12, textAlign: 'center' },
   keypad: { flexDirection: 'row', flexWrap: 'wrap', width: 280, justifyContent: 'space-between', gap: 16 },
   keyBtn: { width: 75, height: 60, borderRadius: 16, backgroundColor: '#121218', borderWidth: 1, borderColor: '#2A2A36', justifyContent: 'center', alignItems: 'center' },
   keyText: { fontSize: 22, fontWeight: 'bold', color: '#fff' },
