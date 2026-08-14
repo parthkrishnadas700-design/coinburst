@@ -57,16 +57,6 @@ export const formatCurrency = (amount: number, currency: string = 'USD') => {
   }
 };
 
-const hashPin = (pin: string) => {
-  let hash = 0;
-  for (let i = 0; i < pin.length; i++) {
-    const char = pin.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash |= 0;
-  }
-  return hash.toString(36);
-};
-
 // ── Firebase Sync ──
 const saveStateToFirebase = async (
   uid: string, accounts: Account[], transactions: Transaction[],
@@ -89,19 +79,6 @@ interface FinanceState {
   selectedAccountId: string | null;
   user: UserProfile | null;
   loading: boolean;
-
-  // ── Security & Biometric Lock ──
-  isPinEnabled: boolean;
-  isBiometricEnabled: boolean;
-  securityPinHash: string | null;
-  isLocked: boolean;
-
-  setSecurityPin: (pin: string | null) => Promise<void>;
-  setBiometricEnabled: (enabled: boolean) => Promise<void>;
-  verifyAndUnlock: (pin: string) => boolean;
-  unlockWithBiometric: () => void;
-  lockApp: () => void;
-  loadSecuritySettings: () => Promise<void>;
 
   addAccount: (account: Omit<Account, 'id'>) => void;
   deleteAccount: (id: string) => void;
@@ -126,70 +103,6 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
   selectedAccountId: null,
   user: null,
   loading: false,
-
-  // Security Defaults
-  isPinEnabled: false,
-  isBiometricEnabled: false,
-  securityPinHash: null,
-  isLocked: false,
-
-  loadSecuritySettings: async () => {
-    try {
-      const pinEnabled = await AsyncStorage.getItem('security_is_pin_enabled');
-      const bioEnabled = await AsyncStorage.getItem('security_is_bio_enabled');
-      const pinHash = await AsyncStorage.getItem('security_pin_hash');
-      set({
-        isPinEnabled: pinEnabled === 'true',
-        isBiometricEnabled: bioEnabled === 'true',
-        securityPinHash: pinHash,
-      });
-    } catch (e) {
-      console.error('Error loading security settings:', e);
-    }
-  },
-
-  setSecurityPin: async (pin) => {
-    if (!pin) {
-      set({ isPinEnabled: false, securityPinHash: null });
-      await AsyncStorage.removeItem('security_pin_hash');
-      await AsyncStorage.setItem('security_is_pin_enabled', 'false');
-    } else {
-      const hashed = hashPin(pin);
-      set({ isPinEnabled: true, securityPinHash: hashed });
-      await AsyncStorage.setItem('security_pin_hash', hashed);
-      await AsyncStorage.setItem('security_is_pin_enabled', 'true');
-    }
-  },
-
-  setBiometricEnabled: async (enabled) => {
-    set({ isBiometricEnabled: enabled });
-    await AsyncStorage.setItem('security_is_bio_enabled', enabled ? 'true' : 'false');
-  },
-
-  verifyAndUnlock: (pin) => {
-    const { securityPinHash } = get();
-    if (!securityPinHash) {
-      set({ isLocked: false });
-      return true;
-    }
-    const enteredHash = hashPin(pin);
-    if (enteredHash === securityPinHash) {
-      set({ isLocked: false });
-      return true;
-    }
-    return false;
-  },
-
-  unlockWithBiometric: () => {
-    set({ isLocked: false });
-  },
-
-  lockApp: () => {
-    const { isPinEnabled, isBiometricEnabled } = get();
-    if (isPinEnabled || isBiometricEnabled) {
-      set({ isLocked: true });
-    }
-  },
 
   addAccount: (accountData) => {
     const id = Date.now().toString(36) + Math.random().toString(36).substring(2);

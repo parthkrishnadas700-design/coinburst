@@ -6,7 +6,6 @@ import { AddTransactionWeb } from './components/AddTransactionWeb';
 import { Layout } from './pages/Layout';
 import { Dashboard } from './pages/Dashboard';
 import { WelcomeScreen } from './components/WelcomeScreen';
-import { SecurityLockOverlay } from './components/SecurityLockOverlay';
 import { auth, handleGoogleRedirectResult } from './shared/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useFinanceStore } from './shared/useFinanceStore';
@@ -23,17 +22,12 @@ function App() {
   const user = useFinanceStore((state) => state.user);
   const theme = useFinanceStore((state) => state.theme);
   
-  // Gamification + Recurring Backend Boot + Security Lock
+  // Gamification + Recurring Backend Boot
   const processRecurringTransactions = useFinanceStore(state => state.processRecurringTransactions);
-  const lockApp = useFinanceStore(state => state.lockApp);
 
   useEffect(() => {
-    // Lock app on fresh load / refresh if security lock is enabled
-    lockApp();
-    initNativeListeners(undefined, () => {
-      lockApp();
-    });
-  }, [lockApp]);
+    initNativeListeners();
+  }, []);
 
   useEffect(() => {
     updateNativeStatusBar(theme);
@@ -50,7 +44,6 @@ function App() {
           selectedTheme: useFinanceStore.getState().theme,
         });
         processRecurringTransactions?.();
-        lockApp();
         setAuthReady(true);
       } else {
         handleGoogleRedirectResult().then((redirectUser) => {
@@ -63,7 +56,6 @@ function App() {
               selectedTheme: useFinanceStore.getState().theme,
             });
             processRecurringTransactions?.();
-            lockApp();
           } else {
             setUser(null);
           }
@@ -75,7 +67,7 @@ function App() {
       }
     });
     return () => unsubscribe();
-  }, [setUser, processRecurringTransactions, lockApp]);
+  }, [setUser, processRecurringTransactions]);
 
   if (!authReady) {
     return (
@@ -129,8 +121,6 @@ function App() {
             setEditingTx(null);
           }}
         />
-
-        <SecurityLockOverlay />
       </div>
     </BrowserRouter>
   );

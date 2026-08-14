@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { database } from './firebase';
 import { ref, set as firebaseSet, get as firebaseGet, update as firebaseUpdate, onValue } from 'firebase/database';
 import { triggerHaptic, triggerHapticNotification, showNativeToast } from './nativeBridge';
-import { sanitizeText, validateAmount, sanitizeCategory, hashPin } from './securityUtils';
+import { sanitizeText, validateAmount, sanitizeCategory } from './securityUtils';
 
 export type ThemeType = 'dark' | 'light' | 'cyberpunk' | 'glass' | 'forest' | 'synthwave';
 
@@ -92,17 +92,7 @@ interface FinanceState {
   streakDays: number;
   lastActiveDate: string;
 
-  // ── Security & PIN / Biometric Lock ──────────────────────────────
-  isPinEnabled: boolean;
-  isBiometricEnabled: boolean;
-  securityPinHash: string | null;
-  isLocked: boolean;
 
-  setSecurityPin: (pin: string | null) => void;
-  setBiometricEnabled: (enabled: boolean) => void;
-  verifyAndUnlock: (pin: string) => boolean;
-  unlockWithBiometric: () => void;
-  lockApp: () => void;
 
   setCurrency: (currency: string) => void;
   setTheme: (theme: ThemeType) => void;
@@ -227,57 +217,7 @@ export const useFinanceStore = create<FinanceState>()(
       streakDays: 0,
       lastActiveDate: '',
 
-      // Security PIN & Biometric Lock Defaults
-      isPinEnabled: false,
-      isBiometricEnabled: false,
-      securityPinHash: null,
-      isLocked: false,
 
-      setSecurityPin: (pin) => {
-        if (!pin) {
-          set({ isPinEnabled: false, securityPinHash: null });
-          showNativeToast('Security PIN removed');
-        } else {
-          const hashed = hashPin(pin);
-          set({ isPinEnabled: true, securityPinHash: hashed });
-          showNativeToast('4-Digit Security PIN enabled!');
-        }
-      },
-
-      setBiometricEnabled: (enabled) => {
-        set({ isBiometricEnabled: enabled });
-        showNativeToast(enabled ? 'Fingerprint / Biometric Lock enabled!' : 'Biometric Lock disabled');
-      },
-
-      verifyAndUnlock: (pin) => {
-        const { securityPinHash } = get();
-        if (!securityPinHash) {
-          set({ isLocked: false });
-          return true;
-        }
-        const enteredHash = hashPin(pin);
-        if (enteredHash === securityPinHash) {
-          set({ isLocked: false });
-          triggerHapticNotification('success');
-          return true;
-        }
-        triggerHapticNotification('error');
-        return false;
-      },
-
-      unlockWithBiometric: () => {
-        set({ isLocked: false });
-        triggerHapticNotification('success');
-        showNativeToast('Authenticated via Fingerprint');
-      },
-
-      lockApp: () => {
-        const { isPinEnabled, isBiometricEnabled } = get();
-        if (isPinEnabled || isBiometricEnabled) {
-          set({ isLocked: true });
-          triggerHaptic('medium');
-        }
-      },
 
       // ── Currency ──────────────────────────────────────────────────────────────
       setCurrency: (currency) => {
@@ -698,16 +638,13 @@ export const useFinanceStore = create<FinanceState>()(
           removeItem: () => {},
         };
       }),
-      // Persist user preference, local ledger cache & security locks across app restarts/refreshes
+      // Persist user preference & local ledger cache across app restarts/refreshes
       partialize: (state) => ({
         theme: state.theme,
         currency: state.currency,
         accounts: state.accounts,
         transactions: state.transactions,
         budgets: state.budgets,
-        isPinEnabled: state.isPinEnabled,
-        isBiometricEnabled: state.isBiometricEnabled,
-        securityPinHash: state.securityPinHash,
       }),
     }
   )

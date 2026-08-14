@@ -9,7 +9,7 @@ import {
 import { 
   Plus, Trash2, ArrowUpRight, ArrowDownRight, Search, ChevronDown, 
   TrendingUp, PiggyBank, Bot, Download, Sparkles, Pencil,
-  Shield, Lock, Upload, Database, RefreshCw, Fingerprint
+  Upload, Database, RefreshCw
 } from 'lucide-react';
 import { generateAIResponse } from '../utils/aiCommandEngine';
 import { AboutWeb } from './AboutWeb';
@@ -468,17 +468,11 @@ export const DashboardWeb: React.FC<{
   const user = useFinanceStore((state) => state.user);
   const updateUserProfile = useFinanceStore((state) => state.updateUserProfile);
 
-  const isPinEnabled = useFinanceStore((state) => state.isPinEnabled);
-  const isBiometricEnabled = useFinanceStore((state) => state.isBiometricEnabled);
-  const setSecurityPin = useFinanceStore((state) => state.setSecurityPin);
-  const setBiometricEnabled = useFinanceStore((state) => state.setBiometricEnabled);
-  const lockApp = useFinanceStore((state) => state.lockApp);
   const exportData = useFinanceStore((state) => state.exportData);
   const importData = useFinanceStore((state) => state.importData);
   const syncWithFirebase = useFinanceStore((state) => state.syncWithFirebase);
   const loading = useFinanceStore((state) => state.loading);
 
-  const [newPinInput, setNewPinInput] = useState('');
   const [backupMessage, setBackupMessage] = useState('');
   const [isManualSyncing, setIsManualSyncing] = useState(false);
 
@@ -1558,95 +1552,7 @@ export const DashboardWeb: React.FC<{
                   </div>
                 </div>
 
-                {/* 4. Security & Passcode Lock Panel */}
-                <div className={`p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow}`}>
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                        <Shield className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-black tracking-wide">App Security & Passcode Lock</h3>
-                        <p className="text-xs text-gray-400">Require a 4-digit PIN to access financial ledgers and balances.</p>
-                      </div>
-                    </div>
 
-                    {isPinEnabled && (
-                      <button
-                        onClick={lockApp}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 ${cStyles.primaryBtnOutline}`}
-                      >
-                        <Lock className="w-4 h-4" /> Lock App Now
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="p-4 rounded-xl bg-black/30 border border-gray-800/60 max-w-xl space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-gray-300">Security PIN Protection</span>
-                      <span className={`text-xs font-mono font-bold px-2.5 py-0.5 rounded-full ${isPinEnabled ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-gray-800 text-gray-400'}`}>
-                        {isPinEnabled ? '✓ ENABLED' : 'DISABLED'}
-                      </span>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      <input
-                        type="password"
-                        maxLength={4}
-                        placeholder="Enter 4-digit PIN"
-                        value={newPinInput}
-                        onChange={(e) => setNewPinInput(e.target.value.replace(/\D/g, ''))}
-                        className={`px-4 py-2.5 rounded-xl font-mono text-sm font-bold flex-1 ${cStyles.input}`}
-                      />
-                      <button
-                        onClick={() => {
-                          if (newPinInput.length === 4) {
-                            setSecurityPin(newPinInput);
-                            setNewPinInput('');
-                          }
-                        }}
-                        disabled={newPinInput.length !== 4}
-                        className={`px-5 py-2.5 rounded-xl font-bold text-xs disabled:opacity-40 transition-all ${cStyles.primaryBtn}`}
-                      >
-                        {isPinEnabled ? 'Update PIN' : 'Enable 4-Digit PIN'}
-                      </button>
-
-                      {isPinEnabled && (
-                        <button
-                          onClick={() => {
-                            setSecurityPin(null);
-                            setNewPinInput('');
-                          }}
-                          className="px-4 py-2.5 rounded-xl font-bold text-xs bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 transition-colors cursor-pointer"
-                        >
-                          Disable PIN
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="p-4 rounded-xl bg-black/30 border border-gray-800/60 max-w-xl flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                          <Fingerprint className="w-5 h-5" />
-                        </div>
-                        <div className="text-left">
-                          <p className="text-xs font-bold text-gray-200">Fingerprint / Biometric Lock</p>
-                          <p className="text-[11px] text-gray-400">Unlock automatically on app launch using your fingerprint scanner</p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => setBiometricEnabled(!isBiometricEnabled)}
-                        className={`px-4 py-2 rounded-xl font-bold text-xs cursor-pointer transition-all ${
-                          isBiometricEnabled
-                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.3)]'
-                            : 'bg-white/5 hover:bg-white/10 text-gray-400 border border-white/10'
-                        }`}
-                      >
-                        {isBiometricEnabled ? '✓ ENABLED' : 'ENABLE'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
 
                 {/* 5. Data Backup & System Restore Panel */}
                 <div className={`p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow}`}>
