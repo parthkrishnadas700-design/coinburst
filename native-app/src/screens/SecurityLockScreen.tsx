@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as LocalAuthentication from 'expo-local-authentication';
@@ -10,8 +10,12 @@ export const SecurityLockScreen: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [isScanning, setIsScanning] = useState<boolean>(false);
 
+  const isScanningRef = useRef(false);
+  const hasPromptedRef = useRef(false);
+
   const handleFingerprintAuth = useCallback(async () => {
-    if (isScanning) return;
+    if (isScanningRef.current) return;
+    isScanningRef.current = true;
     setIsScanning(true);
     setErrorMessage('');
 
@@ -28,10 +32,12 @@ export const SecurityLockScreen: React.FC = () => {
         });
 
         if (result.success) {
-          // ONLY unlock when fingerprint sensor confirms match!
           unlockWithBiometric();
+          isScanningRef.current = false;
+          setIsScanning(false);
+          return;
         } else {
-          setErrorMessage('Fingerprint not recognized or scan cancelled.');
+          setErrorMessage('Fingerprint cancelled or not recognized. Enter PIN.');
         }
       } else {
         setErrorMessage('Biometrics not set up on device. Enter PIN.');
@@ -40,15 +46,23 @@ export const SecurityLockScreen: React.FC = () => {
       console.log('Biometric auth error:', e);
       setErrorMessage('Biometric scan failed. Enter PIN.');
     }
+    isScanningRef.current = false;
     setIsScanning(false);
-  }, [unlockWithBiometric, isScanning]);
+  }, [unlockWithBiometric]);
 
   useEffect(() => {
-    if (isLocked && isBiometricEnabled) {
-      const timer = setTimeout(() => {
-        handleFingerprintAuth();
-      }, 400);
-      return () => clearTimeout(timer);
+    if (isLocked) {
+      if (isBiometricEnabled && !hasPromptedRef.current) {
+        hasPromptedRef.current = true;
+        const timer = setTimeout(() => {
+          handleFingerprintAuth();
+        }, 300);
+        return () => clearTimeout(timer);
+      }
+    } else {
+      hasPromptedRef.current = false;
+      setPinDigits([]);
+      setErrorMessage('');
     }
   }, [isLocked, isBiometricEnabled, handleFingerprintAuth]);
 
@@ -65,10 +79,10 @@ export const SecurityLockScreen: React.FC = () => {
       setTimeout(() => {
         const success = verifyAndUnlock(pinStr);
         if (!success) {
-          setErrorMessage('Invalid Security PIN');
+          setErrorMessage('Invalid Security PIN. Try again.');
           setPinDigits([]);
         }
-      }, 150);
+      }, 100);
     }
   };
 
@@ -119,7 +133,7 @@ export const SecurityLockScreen: React.FC = () => {
           ))}
 
           {/* Fingerprint Scanner Button */}
-          <TouchableOpacity onPress={handleFingerprintAuth} disabled={isScanning} style={styles.fingerprintBtn} activeOpacity={0.7}>
+          <TouchableOpacity onPress={handleFingerprintAuth} style={styles.fingerprintBtn} activeOpacity={0.7}>
             <Text style={styles.fingerprintIconText}>👆</Text>
           </TouchableOpacity>
 
@@ -133,9 +147,9 @@ export const SecurityLockScreen: React.FC = () => {
         </View>
 
         {/* Scan Fingerprint Bar */}
-        <TouchableOpacity onPress={handleFingerprintAuth} disabled={isScanning} style={styles.bioBar} activeOpacity={0.8}>
+        <TouchableOpacity onPress={handleFingerprintAuth} style={styles.bioBar} activeOpacity={0.8}>
           <Text style={styles.bioBarText}>
-            {isScanning ? 'Scanning Sensor...' : 'Scan Fingerprint Sensor'}
+            {isScanning ? 'Scanning Sensor...' : 'Tap to Scan Fingerprint'}
           </Text>
         </TouchableOpacity>
       </View>

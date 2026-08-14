@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Shield, Lock, Delete, Fingerprint } from 'lucide-react';
 import { useFinanceStore } from '../shared/useFinanceStore';
@@ -14,12 +14,16 @@ export const SecurityLockOverlay: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [isScanning, setIsScanning] = useState<boolean>(false);
 
-  // Trigger Native Fingerprint Scan
-  const handleFingerprintAuth = useCallback(async () => {
-    if (isScanning) return;
+  const isScanningRef = useRef(false);
+  const hasPromptedRef = useRef(false);
+
+  // Perform single biometric scan safely
+  const triggerBiometricScan = useCallback(async () => {
+    if (isScanningRef.current) return;
+    isScanningRef.current = true;
     setIsScanning(true);
-    triggerHaptic('medium');
     setErrorMessage('');
+    triggerHaptic('medium');
 
     try {
       if (Capacitor.isNativePlatform()) {
@@ -29,43 +33,51 @@ export const SecurityLockOverlay: React.FC = () => {
             reason: "Scan your fingerprint to unlock CoinBurst",
             title: "CoinBurst Security Lock",
             subtitle: "Fingerprint Authentication Required",
-            description: "Place your finger on the fingerprint sensor",
+            description: "Place your finger on the sensor",
           });
-          // ONLY unlock when native fingerprint sensor verifies identity!
+          // Certified Fingerprint Match -> Unlock
           unlockWithBiometric();
+          isScanningRef.current = false;
           setIsScanning(false);
           return;
         } else {
-          setErrorMessage('Fingerprint sensor not available on this device. Enter PIN.');
+          setErrorMessage('Fingerprint sensor not detected. Enter 4-digit PIN.');
         }
       } else {
-        // Web Browser WebAuthn Check
+        // Web Browser / Demo
         if (window.PublicKeyCredential && await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()) {
           unlockWithBiometric();
+          isScanningRef.current = false;
           setIsScanning(false);
           return;
         } else {
-          setErrorMessage('Biometrics not available in web browser. Enter PIN.');
+          setErrorMessage('Biometrics unavailable in browser. Enter 4-digit PIN.');
         }
       }
     } catch (err: any) {
-      console.log('Biometric auth failed or cancelled:', err);
-      setErrorShake(true);
-      setErrorMessage('Fingerprint not recognized or scan cancelled. Enter PIN.');
-      setTimeout(() => setErrorShake(false), 500);
+      console.log('Biometric auth cancelled or failed:', err);
+      setErrorMessage('Fingerprint cancelled or not recognized. Enter PIN below.');
     }
+    isScanningRef.current = false;
     setIsScanning(false);
-  }, [unlockWithBiometric, isScanning]);
+  }, [unlockWithBiometric]);
 
-  // Auto-prompt Native Fingerprint scan on lock screen load ONLY if biometrics enabled
+  // Prompt fingerprint ONCE when lock screen appears
   useEffect(() => {
-    if (isLocked && isBiometricEnabled) {
-      const timer = setTimeout(() => {
-        handleFingerprintAuth();
-      }, 400);
-      return () => clearTimeout(timer);
+    if (isLocked) {
+      if (isBiometricEnabled && !hasPromptedRef.current) {
+        hasPromptedRef.current = true;
+        const timer = setTimeout(() => {
+          triggerBiometricScan();
+        }, 300);
+        return () => clearTimeout(timer);
+      }
+    } else {
+      hasPromptedRef.current = false;
+      setPinDigits([]);
+      setErrorMessage('');
     }
-  }, [isLocked, isBiometricEnabled, handleFingerprintAuth]);
+  }, [isLocked, isBiometricEnabled, triggerBiometricScan]);
 
   if (!isLocked) return null;
 
@@ -83,11 +95,11 @@ export const SecurityLockOverlay: React.FC = () => {
         const success = verifyAndUnlock(pinStr);
         if (!success) {
           setErrorShake(true);
-          setErrorMessage('Invalid Security PIN');
+          setErrorMessage('Invalid Security PIN. Try again.');
           setPinDigits([]);
           setTimeout(() => setErrorShake(false), 500);
         }
-      }, 150);
+      }, 100);
     }
   };
 
@@ -149,7 +161,7 @@ export const SecurityLockOverlay: React.FC = () => {
           </p>
         )}
 
-        {/* Keypad Grid */}
+        {/* Keypad Grid (Always 100% active and clickable) */}
         <div className="grid grid-cols-3 gap-4 w-full pt-2">
           {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((num) => (
             <button
@@ -161,14 +173,13 @@ export const SecurityLockOverlay: React.FC = () => {
             </button>
           ))}
           
-          {/* Fingerprint Scanner Button */}
+          {/* Manual Fingerprint Scan Trigger */}
           <button
-            onClick={handleFingerprintAuth}
-            disabled={isScanning}
-            className="h-14 rounded-2xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 font-bold border border-emerald-500/30 active:scale-95 transition-all cursor-pointer flex items-center justify-center disabled:opacity-50"
-            title="Scan Fingerprint"
+            onClick={triggerBiometricScan}
+            className="h-14 rounded-2xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 font-bold border border-emerald-500/30 active:scale-95 transition-all cursor-pointer flex items-center justify-center"
+            title="Tap to scan fingerprint"
           >
-            <Fingerprint className={`w-7 h-7 text-emerald-400 ${isScanning ? 'animate-spin' : 'animate-pulse'}`} />
+            <Fingerprint className={`w-7 h-7 text-emerald-400 ${isScanning ? 'animate-pulse' : ''}`} />
           </button>
 
           <button
@@ -189,18 +200,17 @@ export const SecurityLockOverlay: React.FC = () => {
 
         {/* Scan Fingerprint Bar */}
         <button
-          onClick={handleFingerprintAuth}
-          disabled={isScanning}
-          className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500/10 via-cyan-500/10 to-emerald-500/10 hover:from-emerald-500/20 hover:to-cyan-500/20 border border-emerald-500/30 flex items-center justify-center gap-3 active:scale-98 transition-all cursor-pointer disabled:opacity-50"
+          onClick={triggerBiometricScan}
+          className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500/10 via-cyan-500/10 to-emerald-500/10 hover:from-emerald-500/20 hover:to-cyan-500/20 border border-emerald-500/30 flex items-center justify-center gap-3 active:scale-98 transition-all cursor-pointer"
         >
           <Fingerprint className="w-5 h-5 text-emerald-400" />
           <span className="text-xs font-extrabold text-emerald-300 tracking-wide">
-            {isScanning ? 'Scanning Sensor...' : 'Scan Fingerprint Sensor'}
+            {isScanning ? 'Scanning Sensor...' : 'Tap to Scan Fingerprint'}
           </span>
         </button>
 
         <p className="text-[10px] text-gray-500 uppercase tracking-widest font-extrabold pt-1">
-          Protected with Hardware Fingerprint Verification
+          Enter PIN or Scan Fingerprint to Unlock
         </p>
       </motion.div>
     </div>
