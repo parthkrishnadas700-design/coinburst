@@ -47,9 +47,9 @@ export default function App() {
   }, [lockApp]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
-        await setUser({
+        setUser({
           uid: firebaseUser.uid,
           email: firebaseUser.email || '',
           displayName: firebaseUser.displayName || 'Wealth Builder',
@@ -57,7 +57,7 @@ export default function App() {
         });
         lockApp();
       } else {
-        await setUser(null);
+        setUser(null);
       }
       setAuthReady(true);
     });

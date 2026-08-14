@@ -79,8 +79,11 @@ export const signInWithGoogle = async () => {
   }
 };
 
-// Call this after app initialization to handle redirect result
+// Call this after app initialization to handle redirect result (only when web redirect occurs)
 export const handleGoogleRedirectResult = async () => {
+  if (Capacitor.isNativePlatform() || (!window.location.search && !window.location.hash)) {
+    return null;
+  }
   try {
     const result = await getRedirectResult(auth);
     if (result?.user) {
@@ -90,7 +93,7 @@ export const handleGoogleRedirectResult = async () => {
     return null;
   } catch (error) {
     console.error("Google Redirect Result Error:", error);
-    throw error;
+    return null;
   }
 };
 

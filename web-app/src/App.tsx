@@ -40,26 +40,22 @@ function App() {
   }, [theme]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      try {
-        if (firebaseUser) {
-          await setUser({
-            uid: firebaseUser.uid,
-            email: firebaseUser.email || '',
-            displayName: firebaseUser.displayName || 'Wealth Builder',
-            photoURL: firebaseUser.photoURL || undefined,
-            selectedTheme: useFinanceStore.getState().theme,
-          });
-          
-          // Boot up systems & security lock
-          processRecurringTransactions?.();
-          lockApp();
-          setShowWelcome(true);
-        } else {
-          // Attempt to handle redirect result if no user yet
-          const redirectUser = await handleGoogleRedirectResult();
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        setUser({
+          uid: firebaseUser.uid,
+          email: firebaseUser.email || '',
+          displayName: firebaseUser.displayName || 'Wealth Builder',
+          photoURL: firebaseUser.photoURL || undefined,
+          selectedTheme: useFinanceStore.getState().theme,
+        });
+        processRecurringTransactions?.();
+        lockApp();
+        setAuthReady(true);
+      } else {
+        handleGoogleRedirectResult().then((redirectUser) => {
           if (redirectUser) {
-            await setUser({
+            setUser({
               uid: redirectUser.uid,
               email: redirectUser.email || '',
               displayName: redirectUser.displayName || 'Wealth Builder',
@@ -68,15 +64,14 @@ function App() {
             });
             processRecurringTransactions?.();
             lockApp();
-            setShowWelcome(true);
           } else {
-            await setUser(null);
+            setUser(null);
           }
-        }
-      } catch (error) {
-        console.error("Auth initialization error:", error);
-      } finally {
-        setAuthReady(true);
+          setAuthReady(true);
+        }).catch(() => {
+          setUser(null);
+          setAuthReady(true);
+        });
       }
     });
     return () => unsubscribe();

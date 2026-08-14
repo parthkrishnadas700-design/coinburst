@@ -121,7 +121,7 @@ interface FinanceState {
     theme?: ThemeType;
     currency?: string;
   }) => void;
-  setUser: (user: UserProfile | null) => Promise<void>;
+  setUser: (user: UserProfile | null) => void;
   setLoading: (loading: boolean) => void;
   updateUserProfile: (profile: Partial<UserProfile>) => Promise<void>;
   updateTransaction: (updatedTx: Transaction) => void;
@@ -595,14 +595,14 @@ export const useFinanceStore = create<FinanceState>()(
       set({ transactions: newTransactions });
     }
   },
-      setUser: async (user) => {
+      setUser: (user) => {
         if (activeFirebaseUnsubscribe) {
           activeFirebaseUnsubscribe();
           activeFirebaseUnsubscribe = null;
         }
 
         if (user) {
-          set({ user, loading: true });
+          set({ user });
           const dbRef = ref(database, `users/${user.uid}`);
           try {
             // Real-time listener for instant cross-device updates (Mobile <-> Web)
@@ -631,19 +631,20 @@ export const useFinanceStore = create<FinanceState>()(
               }
             });
 
-            const snapshot = await firebaseGet(dbRef);
-            if (!snapshot.exists()) {
-              const freshProfile = {
-                displayName: user.displayName,
-                photoURL: user.photoURL || '',
-                email: user.email,
-              };
-              await firebaseSet(dbRef, {
-                theme: 'dark',
-                currency: 'INR',
-                profile: freshProfile,
-              });
-            }
+            firebaseGet(dbRef).then((snapshot) => {
+              if (!snapshot.exists()) {
+                const freshProfile = {
+                  displayName: user.displayName,
+                  photoURL: user.photoURL || '',
+                  email: user.email,
+                };
+                firebaseSet(dbRef, {
+                  theme: 'dark',
+                  currency: 'INR',
+                  profile: freshProfile,
+                });
+              }
+            }).catch((e) => console.warn('[CoinBurst] Async profile check error:', e));
           } catch (error) {
             console.error('[CoinBurst] Firebase load/subscription failed:', error);
           } finally {
