@@ -92,13 +92,16 @@ interface FinanceState {
   streakDays: number;
   lastActiveDate: string;
 
-  // ── Security & PIN Lock ───────────────────────────────────────────
+  // ── Security & PIN / Biometric Lock ──────────────────────────────
   isPinEnabled: boolean;
+  isBiometricEnabled: boolean;
   securityPinHash: string | null;
   isLocked: boolean;
 
   setSecurityPin: (pin: string | null) => void;
+  setBiometricEnabled: (enabled: boolean) => void;
   verifyAndUnlock: (pin: string) => boolean;
+  unlockWithBiometric: () => void;
   lockApp: () => void;
 
   setCurrency: (currency: string) => void;
@@ -224,20 +227,26 @@ export const useFinanceStore = create<FinanceState>()(
       streakDays: 0,
       lastActiveDate: '',
 
-      // Security PIN Lock Defaults
+      // Security PIN & Biometric Lock Defaults
       isPinEnabled: false,
+      isBiometricEnabled: false,
       securityPinHash: null,
       isLocked: false,
 
       setSecurityPin: (pin) => {
         if (!pin) {
-          set({ isPinEnabled: false, securityPinHash: null, isLocked: false });
+          set({ isPinEnabled: false, securityPinHash: null });
           showNativeToast('Security PIN removed');
         } else {
           const hashed = hashPin(pin);
-          set({ isPinEnabled: true, securityPinHash: hashed, isLocked: false });
+          set({ isPinEnabled: true, securityPinHash: hashed });
           showNativeToast('4-Digit Security PIN enabled!');
         }
+      },
+
+      setBiometricEnabled: (enabled) => {
+        set({ isBiometricEnabled: enabled });
+        showNativeToast(enabled ? 'Fingerprint / Biometric Lock enabled!' : 'Biometric Lock disabled');
       },
 
       verifyAndUnlock: (pin) => {
@@ -256,9 +265,15 @@ export const useFinanceStore = create<FinanceState>()(
         return false;
       },
 
+      unlockWithBiometric: () => {
+        set({ isLocked: false });
+        triggerHapticNotification('success');
+        showNativeToast('Authenticated via Fingerprint');
+      },
+
       lockApp: () => {
-        const { isPinEnabled } = get();
-        if (isPinEnabled) {
+        const { isPinEnabled, isBiometricEnabled } = get();
+        if (isPinEnabled || isBiometricEnabled) {
           set({ isLocked: true });
           triggerHaptic('medium');
         }
@@ -682,13 +697,16 @@ export const useFinanceStore = create<FinanceState>()(
           removeItem: () => {},
         };
       }),
-      // Persist user preference and local ledger cache for offline / instant load on mobile
+      // Persist user preference, local ledger cache & security locks across app restarts/refreshes
       partialize: (state) => ({
         theme: state.theme,
         currency: state.currency,
         accounts: state.accounts,
         transactions: state.transactions,
         budgets: state.budgets,
+        isPinEnabled: state.isPinEnabled,
+        isBiometricEnabled: state.isBiometricEnabled,
+        securityPinHash: state.securityPinHash,
       }),
     }
   )

@@ -1,12 +1,17 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, TextInput } from 'react-native';
 import { useFinanceStore, SUPPORTED_CURRENCIES, ThemeType } from '../shared/useFinanceStore';
 import { getThemeColors } from '../theme/colors';
 import { signOutUser } from '../shared/firebase';
 
 export const SettingsScreen: React.FC = () => {
-  const { user, theme, setTheme, currency, setCurrency } = useFinanceStore();
+  const { 
+    user, theme, setTheme, currency, setCurrency,
+    isPinEnabled, isBiometricEnabled, setSecurityPin, setBiometricEnabled, lockApp
+  } = useFinanceStore();
   const c = getThemeColors(theme);
+
+  const [pinInput, setPinInput] = useState('');
 
   const themes: { id: ThemeType; label: string; desc: string }[] = [
     { id: 'dark', label: 'Cyber Dark', desc: 'Sleek dark theme with neon emerald accents' },
@@ -21,6 +26,22 @@ export const SettingsScreen: React.FC = () => {
     ]);
   };
 
+  const handleSavePin = () => {
+    if (pinInput.length === 4) {
+      setSecurityPin(pinInput);
+      setPinInput('');
+      Alert.alert('Success', '4-Digit Security PIN saved successfully!');
+    } else {
+      Alert.alert('Error', 'Please enter a 4-digit PIN');
+    }
+  };
+
+  const handleDisablePin = () => {
+    setSecurityPin(null);
+    setPinInput('');
+    Alert.alert('Disabled', 'Security PIN has been removed.');
+  };
+
   return (
     <ScrollView style={[styles.container, { backgroundColor: c.bg }]} contentContainerStyle={{ paddingBottom: 100 }}>
       <View style={styles.header}>
@@ -33,6 +54,65 @@ export const SettingsScreen: React.FC = () => {
         <Text style={[styles.sectionTitle, { color: c.text }]}>👤 Account Profile</Text>
         <Text style={[styles.userText, { color: c.text }]}>{user?.displayName || 'Wealth Builder'}</Text>
         <Text style={{ color: c.textMuted, fontSize: 12 }}>{user?.email}</Text>
+      </View>
+
+      {/* Security & Fingerprint Lock */}
+      <View style={[styles.card, { backgroundColor: c.card, borderColor: c.cardBorder }]}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <Text style={[styles.sectionTitle, { color: c.text, marginBottom: 0 }]}>🛡️ Security & Biometrics</Text>
+          {(isPinEnabled || isBiometricEnabled) && (
+            <TouchableOpacity onPress={lockApp} style={styles.lockNowBtn}>
+              <Text style={styles.lockNowText}>Lock App Now</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Fingerprint Lock Toggle */}
+        <TouchableOpacity 
+          onPress={() => setBiometricEnabled(!isBiometricEnabled)}
+          style={[styles.secRow, { backgroundColor: isBiometricEnabled ? c.accent + '20' : c.input, borderColor: isBiometricEnabled ? c.accent : 'transparent' }]}
+        >
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.secLabel, { color: isBiometricEnabled ? c.accent : c.text }]}>
+              👆 Fingerprint / Biometric Lock
+            </Text>
+            <Text style={{ color: c.textMuted, fontSize: 11, marginTop: 2 }}>
+              Automatically prompt fingerprint scan on app open/resume
+            </Text>
+          </View>
+          <Text style={{ color: isBiometricEnabled ? c.accent : c.textMuted, fontWeight: '900', fontSize: 12 }}>
+            {isBiometricEnabled ? '✓ ENABLED' : 'DISABLED'}
+          </Text>
+        </TouchableOpacity>
+
+        {/* PIN Lock Setup */}
+        <View style={{ marginTop: 12 }}>
+          <Text style={{ color: c.textMuted, fontSize: 12, fontWeight: 'bold', marginBottom: 8 }}>
+            4-Digit Passcode: {isPinEnabled ? '✓ ENABLED' : 'NOT SET'}
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <TextInput
+              style={[styles.pinInput, { backgroundColor: c.input, color: c.text }]}
+              placeholder="4-digit PIN"
+              placeholderTextColor={c.textMuted}
+              keyboardType="number-pad"
+              maxLength={4}
+              secureTextEntry
+              value={pinInput}
+              onChangeText={text => setPinInput(text.replace(/\D/g, ''))}
+            />
+            <TouchableOpacity onPress={handleSavePin} style={[styles.pinBtn, { backgroundColor: c.accent }]}>
+              <Text style={{ color: '#000', fontWeight: 'bold', fontSize: 12 }}>
+                {isPinEnabled ? 'Update' : 'Set PIN'}
+              </Text>
+            </TouchableOpacity>
+            {isPinEnabled && (
+              <TouchableOpacity onPress={handleDisablePin} style={[styles.pinBtn, { backgroundColor: '#EF444420' }]}>
+                <Text style={{ color: '#EF4444', fontWeight: 'bold', fontSize: 12 }}>Remove</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
       </View>
 
       {/* Theme Selector */}
@@ -93,6 +173,12 @@ const styles = StyleSheet.create({
   card: { borderRadius: 16, padding: 20, borderWidth: 1, marginTop: 12 },
   sectionTitle: { fontSize: 16, fontWeight: '900', marginBottom: 12 },
   userText: { fontSize: 18, fontWeight: '800' },
+  secRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 14, borderRadius: 12, borderWidth: 1 },
+  secLabel: { fontSize: 13, fontWeight: '800' },
+  lockNowBtn: { backgroundColor: '#00FF8820', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
+  lockNowText: { color: '#00FF88', fontWeight: 'bold', fontSize: 11 },
+  pinInput: { flex: 1, height: 42, borderRadius: 10, paddingHorizontal: 12, fontSize: 14, fontWeight: 'bold' },
+  pinBtn: { height: 42, paddingHorizontal: 14, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
   themeOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 14, borderRadius: 12, borderWidth: 1, marginBottom: 8 },
   themeLabel: { fontSize: 14, fontWeight: '800' },
   currencyGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

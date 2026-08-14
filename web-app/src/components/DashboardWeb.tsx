@@ -9,7 +9,7 @@ import {
 import { 
   Plus, Trash2, ArrowUpRight, ArrowDownRight, Search, ChevronDown, 
   TrendingUp, PiggyBank, Bot, Download, Sparkles, Pencil,
-  Shield, Lock, Upload, Database, RefreshCw
+  Shield, Lock, Upload, Database, RefreshCw, Fingerprint
 } from 'lucide-react';
 import { generateAIResponse } from '../utils/aiCommandEngine';
 import { AboutWeb } from './AboutWeb';
@@ -469,7 +469,9 @@ export const DashboardWeb: React.FC<{
   const updateUserProfile = useFinanceStore((state) => state.updateUserProfile);
 
   const isPinEnabled = useFinanceStore((state) => state.isPinEnabled);
+  const isBiometricEnabled = useFinanceStore((state) => state.isBiometricEnabled);
   const setSecurityPin = useFinanceStore((state) => state.setSecurityPin);
+  const setBiometricEnabled = useFinanceStore((state) => state.setBiometricEnabled);
   const lockApp = useFinanceStore((state) => state.lockApp);
   const exportData = useFinanceStore((state) => state.exportData);
   const importData = useFinanceStore((state) => state.importData);
@@ -508,49 +510,6 @@ export const DashboardWeb: React.FC<{
   const [ledgerSortBy, setLedgerSortBy] = useState('date-newest');
 
   const [confirmDeleteBudgetId, setConfirmDeleteBudgetId] = useState<string | null>(null);
-
-  // Welcome popup state & effect
-  const [showWelcome, setShowWelcome] = useState(false);
-
-  useEffect(() => {
-    const handleOpenWalletModal = () => setShowAddAccount(true);
-    window.addEventListener('coinburst_open_add_wallet', handleOpenWalletModal);
-    return () => window.removeEventListener('coinburst_open_add_wallet', handleOpenWalletModal);
-  }, []);
-
-  useEffect(() => {
-    try {
-      const isWelcomeShown = sessionStorage.getItem('coinburst_welcome_shown');
-      if (!isWelcomeShown) {
-        setShowWelcome(true);
-        setTimeout(() => {
-          try {
-            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2018/2018-84.wav'); // Boot up chime
-            audio.volume = 0.5;
-            audio.play().catch(e => console.log('Welcome sound blocked:', e));
-          } catch (err) {
-            console.warn('Welcome sound failed:', err);
-          }
-        }, 500);
-      }
-    } catch {
-      setShowWelcome(true);
-    }
-  }, []);
-
-  const handleDismissWelcome = () => {
-    setShowWelcome(false);
-    try {
-      sessionStorage.setItem('coinburst_welcome_shown', 'true');
-    } catch (e) {
-      console.warn('Failed to set welcome popup flag:', e);
-    }
-    try {
-      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-84.wav');
-      audio.volume = 0.4;
-      audio.play().catch(e => console.log(e));
-    } catch {}
-  };
 
   // AI Advisor Chat State
   const [chatHistory, setChatHistory] = useState<Array<{ sender: 'user' | 'ai'; text: string }>>([
@@ -1664,6 +1623,28 @@ export const DashboardWeb: React.FC<{
                         </button>
                       )}
                     </div>
+
+                    <div className="p-4 rounded-xl bg-black/30 border border-gray-800/60 max-w-xl flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                          <Fingerprint className="w-5 h-5" />
+                        </div>
+                        <div className="text-left">
+                          <p className="text-xs font-bold text-gray-200">Fingerprint / Biometric Lock</p>
+                          <p className="text-[11px] text-gray-400">Unlock automatically on app launch using your fingerprint scanner</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setBiometricEnabled(!isBiometricEnabled)}
+                        className={`px-4 py-2 rounded-xl font-bold text-xs cursor-pointer transition-all ${
+                          isBiometricEnabled
+                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.3)]'
+                            : 'bg-white/5 hover:bg-white/10 text-gray-400 border border-white/10'
+                        }`}
+                      >
+                        {isBiometricEnabled ? '✓ ENABLED' : 'ENABLE'}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -1881,67 +1862,7 @@ export const DashboardWeb: React.FC<{
         </AnimatePresence>
       </main>
 
-      {/* Welcome Popup Modal */}
-      <AnimatePresence>
-        {showWelcome && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/70 backdrop-blur-md p-4 overflow-y-auto"
-          >
-            <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              className={`max-w-md w-full my-auto p-6 sm:p-8 rounded-3xl text-center ${cStyles.cardBg} ${cStyles.shadow} relative overflow-hidden border border-white/10`}
-            >
-              {/* Decorative background glows */}
-              <div className="absolute -top-10 -left-10 w-40 h-40 bg-[#FF007F]/10 rounded-full blur-3xl" />
-              <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-[#00FF88]/10 rounded-full blur-3xl" />
-              
-              <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-tr from-[#FF007F] via-[#00FF88] to-[#00E5FF] p-[2px]">
-                <div className="w-full h-full bg-[#0B0B0F] rounded-2xl flex items-center justify-center">
-                  <Sparkles className="w-8 h-8 text-emerald-400 animate-pulse" />
-                </div>
-              </div>
-              
-              <h3 className="text-2xl font-black tracking-tight mb-2 text-white">
-                Welcome to CoinBurst
-              </h3>
-              <p className="text-xs uppercase tracking-widest text-emerald-400 font-bold mb-6">
-                Secure Financial Nexus
-              </p>
-              
-              <p className={`text-sm mb-6 ${cStyles.textMuted}`}>
-                Greetings, <span className="font-bold text-white">{user ? user.displayName : 'Guest Operative'}</span>. Your decentralized financial ledger has loaded successfully.
-              </p>
-              
-              <div className={`p-4 rounded-2xl ${cStyles.cardAccentBg} text-left space-y-2 mb-8 border border-white/5`}>
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-400">Ledger Accounts:</span>
-                  <span className="font-mono font-bold text-white">{accounts.length}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-400">Logged Actions:</span>
-                  <span className="font-mono font-bold text-white">{transactions.length}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-400">Active Capital:</span>
-                  <span className="font-mono font-bold text-emerald-400">{fmt(totalBalance)}</span>
-                </div>
-              </div>
-              
-              <button
-                onClick={handleDismissWelcome}
-                className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-wider transition-all duration-300 cursor-pointer ${cStyles.primaryBtn}`}
-              >
-                Unlock Ledger Vault
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
 
       {/* ── Add Account Modal ─────────────────────────────────────────── */}
       <AnimatePresence>

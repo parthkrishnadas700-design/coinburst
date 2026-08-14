@@ -69,8 +69,8 @@ export const updateNativeStatusBar = async (themeName: string) => {
   }
 };
 
-// ── Initialize Native Hardware Listeners ──
-export const initNativeListeners = (onHardwareBack?: () => void) => {
+// ── Initialize Native Hardware & Lifecycle Listeners ──
+export const initNativeListeners = (onHardwareBack?: () => void, onAppResume?: () => void) => {
   if (!isNative) return;
 
   // Listen to hardware back button on Android
@@ -79,6 +79,13 @@ export const initNativeListeners = (onHardwareBack?: () => void) => {
       onHardwareBack();
     } else {
       App.minimizeApp();
+    }
+  });
+
+  // Listen to App Resume / Reopen from background
+  App.addListener('appStateChange', (state) => {
+    if (state.isActive) {
+      onAppResume?.();
     }
   });
 

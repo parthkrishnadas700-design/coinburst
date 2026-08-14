@@ -97,7 +97,7 @@ export const TransactionsScreen: React.FC = () => {
   return (
     <View style={[styles.container, { backgroundColor: c.bg }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={styles.headerRow}>
         <Text style={[styles.headerLabel, { color: c.textMuted }]}>LEDGER FEED</Text>
         <Text style={[styles.headerTitle, { color: c.text }]}>Transactions</Text>
       </View>

@@ -8,9 +8,12 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signInWithRedirect,
-  getRedirectResult
+  getRedirectResult,
+  signInWithCredential
 } from "firebase/auth";
 import { getDatabase } from "firebase/database";
+import { Capacitor } from "@capacitor/core";
+import { GoogleAuth } from "@codetrix-studio/capacitor-google-auth";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBTKlQb9JaFs2j98VaUPozEojxgp8tOvso",
@@ -34,11 +37,31 @@ export const googleProvider = new GoogleAuthProvider();
 googleProvider.addScope("profile");
 googleProvider.addScope("email");
 
-// Auth helper functions
+// Initialize Capacitor Native Google Auth if running on Android/iOS
+if (Capacitor.isNativePlatform()) {
+  GoogleAuth.initialize({
+    clientId: '44180464714-49os9013g7k1vrbru6nhr3grmpd0hd10.apps.googleusercontent.com',
+    scopes: ['profile', 'email'],
+    grantOfflineAccess: true,
+  });
+}
 
-
-// Google Sign-In with Popup first, fallback to Redirect for mobile/blocked popups
+// Google Sign-In (Native Google Dialog on Android APK, Popup/Redirect on Web Browser)
 export const signInWithGoogle = async () => {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      const googleUser = await GoogleAuth.signIn();
+      const idToken = googleUser.authentication?.idToken;
+      if (!idToken) throw new Error("No ID Token received from Google Auth");
+      const credential = GoogleAuthProvider.credential(idToken);
+      const userCredential = await signInWithCredential(auth, credential);
+      return userCredential.user;
+    } catch (nativeErr: any) {
+      console.error("Capacitor Google Auth Error:", nativeErr);
+      throw nativeErr;
+    }
+  }
+
   try {
     const result = await signInWithPopup(auth, googleProvider);
     return result.user;

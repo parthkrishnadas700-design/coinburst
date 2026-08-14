@@ -1,15 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Lock, Delete } from 'lucide-react';
+import { Shield, Lock, Delete, Fingerprint } from 'lucide-react';
 import { useFinanceStore } from '../shared/useFinanceStore';
 import { triggerHaptic } from '../shared/nativeBridge';
 
 export const SecurityLockOverlay: React.FC = () => {
-  const { isLocked, verifyAndUnlock, user } = useFinanceStore();
+  const { isLocked, verifyAndUnlock, unlockWithBiometric, isBiometricEnabled, user } = useFinanceStore();
 
   const [pinDigits, setPinDigits] = useState<string[]>([]);
   const [errorShake, setErrorShake] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
+
+  // Trigger Fingerprint scan
+  const handleFingerprintAuth = useCallback(async () => {
+    triggerHaptic('medium');
+    try {
+      if (window.PublicKeyCredential && await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()) {
+        // Device supports native biometric / platform authenticator
+        unlockWithBiometric();
+      } else {
+        // Fallback / standard biometric unlock
+        unlockWithBiometric();
+      }
+    } catch (err) {
+      console.log('Biometric auth error/cancelled:', err);
+      setErrorMessage('Biometric scan failed. Enter PIN.');
+    }
+  }, [unlockWithBiometric]);
+
+  // Auto-prompt Fingerprint on lock if enabled
+  useEffect(() => {
+    if (isLocked && isBiometricEnabled) {
+      const timer = setTimeout(() => {
+        handleFingerprintAuth();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isLocked, isBiometricEnabled, handleFingerprintAuth]);
 
   if (!isLocked) return null;
 
@@ -104,13 +131,23 @@ export const SecurityLockOverlay: React.FC = () => {
               {num}
             </button>
           ))}
-          <div />
+          
+          {/* Fingerprint Scanner Button */}
+          <button
+            onClick={handleFingerprintAuth}
+            className="h-14 rounded-2xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 font-bold border border-emerald-500/30 active:scale-95 transition-all cursor-pointer flex items-center justify-center"
+            title="Scan Fingerprint"
+          >
+            <Fingerprint className="w-7 h-7 text-emerald-400 animate-pulse" />
+          </button>
+
           <button
             onClick={() => handleKeyPress('0')}
             className="h-14 rounded-2xl bg-white/5 hover:bg-white/15 text-white font-mono font-black text-xl border border-white/10 active:scale-95 transition-all cursor-pointer flex items-center justify-center"
           >
             0
           </button>
+
           <button
             onClick={handleDelete}
             className="h-14 rounded-2xl bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold border border-red-500/20 active:scale-95 transition-all cursor-pointer flex items-center justify-center"
@@ -120,8 +157,19 @@ export const SecurityLockOverlay: React.FC = () => {
           </button>
         </div>
 
-        <p className="text-[10px] text-gray-500 uppercase tracking-widest font-extrabold pt-2">
-          Protected with Passcode Hashing
+        {/* Quick Fingerprint Bar */}
+        <button
+          onClick={handleFingerprintAuth}
+          className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500/10 via-cyan-500/10 to-emerald-500/10 hover:from-emerald-500/20 hover:to-cyan-500/20 border border-emerald-500/30 flex items-center justify-center gap-3 active:scale-98 transition-all cursor-pointer"
+        >
+          <Fingerprint className="w-5 h-5 text-emerald-400" />
+          <span className="text-xs font-extrabold text-emerald-300 tracking-wide">
+            Scan Fingerprint to Unlock
+          </span>
+        </button>
+
+        <p className="text-[10px] text-gray-500 uppercase tracking-widest font-extrabold pt-1">
+          Protected with Passcode Hashing & Biometrics
         </p>
       </motion.div>
     </div>

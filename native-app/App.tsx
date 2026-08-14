@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, AppState } from 'react-native';
 import { onAuthStateChanged } from 'firebase/auth';
 
 import { auth } from './src/shared/firebase';
@@ -8,13 +8,43 @@ import { useFinanceStore } from './src/shared/useFinanceStore';
 import { WelcomeScreen } from './src/screens/WelcomeScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { AppNavigator } from './src/navigation/AppNavigator';
+import { SecurityLockScreen } from './src/screens/SecurityLockScreen';
 
 export default function App() {
   const [authReady, setAuthReady] = useState(false);
-  const [showWelcome, setShowWelcome] = useState(false);
 
   const setUser = useFinanceStore(state => state.setUser);
   const user = useFinanceStore(state => state.user);
+  const lockApp = useFinanceStore(state => state.lockApp);
+  const loadSecuritySettings = useFinanceStore(state => state.loadSecuritySettings);
+
+  const appState = useRef(AppState.currentState);
+
+  // Load security settings and lock app on initial boot
+  useEffect(() => {
+    const bootSecurity = async () => {
+      await loadSecuritySettings();
+      lockApp();
+    };
+    bootSecurity();
+  }, [loadSecuritySettings, lockApp]);
+
+  // Listen to App State change (re-opening / returning from background)
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === 'active'
+      ) {
+        lockApp();
+      }
+      appState.current = nextAppState;
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [lockApp]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -25,14 +55,14 @@ export default function App() {
           displayName: firebaseUser.displayName || 'Wealth Builder',
           photoURL: firebaseUser.photoURL || undefined,
         });
-        setShowWelcome(true);
+        lockApp();
       } else {
         await setUser(null);
       }
       setAuthReady(true);
     });
     return () => unsubscribe();
-  }, [setUser]);
+  }, [setUser, lockApp]);
 
   if (!authReady) {
     return (
@@ -47,18 +77,7 @@ export default function App() {
     return (
       <>
         <LoginScreen />
-        <StatusBar style="light" />
-      </>
-    );
-  }
-
-  if (showWelcome) {
-    return (
-      <>
-        <WelcomeScreen
-          userName={user.displayName || 'Explorer'}
-          onComplete={() => setShowWelcome(false)}
-        />
+        <SecurityLockScreen />
         <StatusBar style="light" />
       </>
     );
@@ -67,6 +86,7 @@ export default function App() {
   return (
     <>
       <AppNavigator />
+      <SecurityLockScreen />
       <StatusBar style="light" />
     </>
   );

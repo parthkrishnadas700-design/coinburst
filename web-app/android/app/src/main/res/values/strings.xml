@@ -1,7 +1,7 @@
-<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">CoinBurst</string>
     <string name="title_activity_main">CoinBurst</string>
     <string name="package_name">com.coinburst.app</string>
     <string name="custom_url_scheme">com.coinburst.app</string>
+    <string name="server_client_id">44180464714-49os9013g7k1vrbru6nhr3grmpd0hd10.apps.googleusercontent.com</string>
 </resources>

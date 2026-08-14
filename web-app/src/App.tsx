@@ -28,8 +28,12 @@ function App() {
   const lockApp = useFinanceStore(state => state.lockApp);
 
   useEffect(() => {
-    initNativeListeners();
-  }, []);
+    // Lock app on fresh load / refresh if security lock is enabled
+    lockApp();
+    initNativeListeners(undefined, () => {
+      lockApp();
+    });
+  }, [lockApp]);
 
   useEffect(() => {
     updateNativeStatusBar(theme);
