@@ -98,3 +98,34 @@ export const initNativeListeners = (onHardwareBack?: () => void, onAppResume?: (
     }
   });
 };
+
+// ── Real-Time Android Home Screen Widget Synchronizer ──
+import { registerPlugin } from '@capacitor/core';
+
+interface WidgetBridgePlugin {
+  updateWidgetData(options: {
+    netProfit: string;
+    income: string;
+    expense: string;
+    status: string;
+    isProfit: boolean;
+  }): Promise<{ success: boolean }>;
+}
+
+const WidgetBridge = registerPlugin<WidgetBridgePlugin>('WidgetBridge');
+
+export const pushRealtimeWidgetUpdate = async (options: {
+  netProfit: string;
+  income: string;
+  expense: string;
+  status: string;
+  isProfit: boolean;
+}) => {
+  if (isNative) {
+    try {
+      await WidgetBridge.updateWidgetData(options);
+    } catch (e) {
+      console.debug('WidgetBridge plugin update error:', e);
+    }
+  }
+};

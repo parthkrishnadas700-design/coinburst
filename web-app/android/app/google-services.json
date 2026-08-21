@@ -15,6 +15,22 @@
       },
       "oauth_client": [
         {
+          "client_id": "44180464714-1atofsoagp85g4j50ikcgoq285psl7mf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.coinburst.app",
+            "certificate_hash": "471b73db0128ae56b27123612251f60ae36a20ed"
+          }
+        },
+        {
+          "client_id": "44180464714-8b7262jnbisp909ea91o1o0lf49mvt2g.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.coinburst.app",
+            "certificate_hash": "dc03f3a0d02b201fb9478b488fda6b3481368062"
+          }
+        },
+        {
           "client_id": "44180464714-9llrpfqraifqb1v4o0eka30ect6h7p7n.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

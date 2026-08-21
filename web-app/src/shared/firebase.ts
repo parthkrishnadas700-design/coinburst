@@ -7,7 +7,6 @@ import {
   updateProfile,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  signInWithRedirect,
   getRedirectResult,
   signInWithCredential
 } from "firebase/auth";
@@ -42,7 +41,7 @@ if (Capacitor.isNativePlatform()) {
   GoogleAuth.initialize({
     clientId: '44180464714-49os9013g7k1vrbru6nhr3grmpd0hd10.apps.googleusercontent.com',
     scopes: ['profile', 'email'],
-    grantOfflineAccess: true,
+    grantOfflineAccess: false,
   });
 }
 
@@ -50,38 +49,49 @@ if (Capacitor.isNativePlatform()) {
 export const signInWithGoogle = async () => {
   if (Capacitor.isNativePlatform()) {
     try {
+      await GoogleAuth.initialize({
+        clientId: '44180464714-49os9013g7k1vrbru6nhr3grmpd0hd10.apps.googleusercontent.com',
+        scopes: ['profile', 'email'],
+        grantOfflineAccess: false,
+      });
+
       const googleUser = await GoogleAuth.signIn();
-      const idToken = googleUser.authentication?.idToken;
-      if (!idToken) throw new Error("No ID Token received from Google Auth");
-      const credential = GoogleAuthProvider.credential(idToken);
-      const userCredential = await signInWithCredential(auth, credential);
-      return userCredential.user;
+      console.log("Capacitor GoogleAuth User Response:", googleUser);
+      
+      const idToken = googleUser?.authentication?.idToken || (googleUser as any)?.idToken;
+      const accessToken = googleUser?.authentication?.accessToken || (googleUser as any)?.accessToken;
+
+      if (idToken) {
+        const credential = GoogleAuthProvider.credential(idToken);
+        const userCredential = await signInWithCredential(auth, credential);
+        return userCredential.user;
+      } else if (accessToken) {
+        const credential = GoogleAuthProvider.credential(null, accessToken);
+        const userCredential = await signInWithCredential(auth, credential);
+        return userCredential.user;
+      }
     } catch (nativeErr: any) {
-      console.error("Capacitor Google Auth Error:", nativeErr);
-      throw nativeErr;
+      console.warn("Native Google Auth error, attempting Firebase Web Auth fallback:", nativeErr);
+      const rawMsg = nativeErr?.message || nativeErr?.errorMessage || (typeof nativeErr === 'string' ? nativeErr : JSON.stringify(nativeErr));
+      if (rawMsg.includes('12501') || rawMsg.includes('cancel') || rawMsg.includes('CLOSED')) {
+        throw new Error("Google Sign-In was cancelled.");
+      }
     }
   }
 
+  // Web Browser & Native Fallback (Popup Auth)
   try {
     const result = await signInWithPopup(auth, googleProvider);
     return result.user;
   } catch (error: any) {
-    console.warn("Google Sign-In Popup failed or blocked, attempting redirect...", error);
-    if (
-      error.code === 'auth/popup-blocked' ||
-      error.code === 'auth/popup-closed-by-user' ||
-      error.code === 'auth/cancelled-popup-request'
-    ) {
-      await signInWithRedirect(auth, googleProvider);
-    } else {
-      throw error;
-    }
+    console.error("Google Sign-In error:", error);
+    throw new Error(error.message || 'Google Authentication failed.');
   }
 };
 
 // Call this after app initialization to handle redirect result (only when web redirect occurs)
 export const handleGoogleRedirectResult = async () => {
-  if (Capacitor.isNativePlatform() || (!window.location.search && !window.location.hash)) {
+  if (!window.location.search && !window.location.hash) {
     return null;
   }
   try {

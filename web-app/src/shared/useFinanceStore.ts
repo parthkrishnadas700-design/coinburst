@@ -4,6 +4,7 @@ import { database } from './firebase';
 import { ref, set as firebaseSet, get as firebaseGet, update as firebaseUpdate, onValue } from 'firebase/database';
 import { triggerHaptic, triggerHapticNotification, showNativeToast } from './nativeBridge';
 import { sanitizeText, validateAmount, sanitizeCategory } from './securityUtils';
+import { notifyBudgetAlert, notifyHighExpense, notifyLowBalance } from './nativeNotifications';
 
 export type ThemeType = 'dark' | 'light' | 'cyberpunk' | 'glass' | 'forest' | 'synthwave';
 
@@ -92,7 +93,13 @@ interface FinanceState {
   streakDays: number;
   lastActiveDate: string;
 
+  customNotificationTime: string;
+  lowBalanceThreshold: number;
+  notificationIntervalHours: number;
 
+  setCustomNotificationTime: (time: string) => void;
+  setLowBalanceThreshold: (threshold: number) => void;
+  setNotificationIntervalHours: (hours: number) => void;
 
   setCurrency: (currency: string) => void;
   setTheme: (theme: ThemeType) => void;
@@ -219,6 +226,14 @@ export const useFinanceStore = create<FinanceState>()(
 
 
 
+      customNotificationTime: '20:00',
+      lowBalanceThreshold: 1000,
+      notificationIntervalHours: 1, // Default interval = Every 1 Hour
+
+      setCustomNotificationTime: (customNotificationTime) => set({ customNotificationTime }),
+      setLowBalanceThreshold: (lowBalanceThreshold) => set({ lowBalanceThreshold }),
+      setNotificationIntervalHours: (notificationIntervalHours) => set({ notificationIntervalHours }),
+
       // ── Currency ──────────────────────────────────────────────────────────────
       setCurrency: (currency) => {
         set({ currency });
@@ -245,6 +260,7 @@ export const useFinanceStore = create<FinanceState>()(
         };
         const amountChange = sanitizedTx.type === 'income' ? sanitizedTx.amount : -sanitizedTx.amount;
         const { accounts, budgets, transactions, theme, currency } = get();
+        const currDef = SUPPORTED_CURRENCIES.find((c) => c.code === currency) ?? SUPPORTED_CURRENCIES[0];
 
         const updatedAccounts = accounts.map((acc) =>
           acc.id === sanitizedTx.accountId
@@ -259,6 +275,24 @@ export const useFinanceStore = create<FinanceState>()(
         triggerHaptic('medium');
         triggerHapticNotification('success');
         showNativeToast('Transaction saved');
+
+        // 🔔 Trigger Local Notifications formatted with Active Currency Symbol ($ / ₹ / € / etc)
+        if (sanitizedTx.type === 'expense') {
+          notifyHighExpense(sanitizedTx.description, sanitizedTx.amount, currDef.symbol);
+          const targetBudget = updatedBudgets.find(
+            (b) => b.category.toLowerCase() === sanitizedTx.category.toLowerCase()
+          );
+          if (targetBudget && targetBudget.limit > 0) {
+            notifyBudgetAlert(targetBudget.category, targetBudget.spent, targetBudget.limit, currDef.symbol);
+          }
+        }
+
+        // 🚨 Trigger Low Money / Low Balance Warning if funds drop below threshold
+        const totalBalance = updatedAccounts.reduce((sum, a) => sum + a.balance, 0);
+        const { lowBalanceThreshold: threshold } = get();
+        if (totalBalance < (threshold ?? 1000)) {
+          notifyLowBalance(totalBalance, threshold ?? 1000, currDef.symbol);
+        }
 
         const { user } = get();
         if (user) saveStateToFirebase(user.uid, updatedAccounts, updatedTransactions, updatedBudgets, theme, currency);

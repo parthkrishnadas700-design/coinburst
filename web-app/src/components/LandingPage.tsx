@@ -5,9 +5,11 @@ import {
   Bot, TrendingUp, ShieldCheck, Palette, Smartphone, 
   Mail, Lock, User, Sparkles, ArrowRight
 } from 'lucide-react';
+import { TermsModal } from './TermsModal';
 
 export const LandingPage: React.FC = () => {
   const [isSignUp, setIsSignUp] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -313,8 +315,30 @@ export const LandingPage: React.FC = () => {
               Google Identity
             </button>
 
+            {/* Terms & Conditions Notice at Google Sign-In */}
+            <p className="text-[10px] text-gray-400 text-center mt-3.5 leading-relaxed">
+              By signing in with Google or registering, you agree to our{' '}
+              <a
+                href="/terms"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-emerald-400 hover:underline font-semibold inline"
+              >
+                Terms & Conditions
+              </a>{' '}
+              and{' '}
+              <a
+                href="/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-cyan-400 hover:underline font-semibold inline"
+              >
+                Privacy Policy
+              </a>.
+            </p>
+
             {/* Toggle Switch */}
-            <div className="mt-8 text-center">
+            <div className="mt-6 text-center">
               <button
                 onClick={() => {
                   setIsSignUp(!isSignUp);
@@ -336,11 +360,28 @@ export const LandingPage: React.FC = () => {
         <div className="max-w-7xl w-full mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-gray-500">
           <p>© 2026 CoinBurst Wealth Hub. Powered by Firebase Realtime Database.</p>
           <div className="flex gap-6">
-            <span className="hover:text-white transition-colors cursor-pointer">Security Protocol</span>
-            <span className="hover:text-white transition-colors cursor-pointer">API Integration</span>
+            <a 
+              href="/terms"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-emerald-400 transition-colors text-xs text-gray-400"
+            >
+              Terms & Conditions
+            </a>
+            <a 
+              href="/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-cyan-400 transition-colors text-xs text-gray-400"
+            >
+              Privacy Policy
+            </a>
           </div>
         </div>
       </footer>
+
+      {/* Terms & Conditions Modal */}
+      <TermsModal isOpen={showTerms} onClose={() => setShowTerms(false)} />
     </div>
   );
 };

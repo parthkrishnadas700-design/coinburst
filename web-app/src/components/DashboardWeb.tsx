@@ -9,12 +9,22 @@ import {
 import { 
   Plus, Trash2, ArrowUpRight, ArrowDownRight, Search, ChevronDown, 
   TrendingUp, PiggyBank, Bot, Download, Sparkles, Pencil,
-  Upload, Database, RefreshCw
+  Upload, Database, RefreshCw, Bell, Clock, ShieldCheck, AlertTriangle
 } from 'lucide-react';
 import { generateAIResponse } from '../utils/aiCommandEngine';
 import { AboutWeb } from './AboutWeb';
 import { CalendarChartColumn } from './CalendarChartColumn';
 import { WalletSlidebar } from './WalletSlidebar';
+import { TermsModal } from './TermsModal';
+import { ProfitLossWidget } from './ProfitLossWidget';
+import { triggerAppUpdateModal } from './UpdatePromptModal';
+import { 
+  requestNotificationPermissions, 
+  scheduleDailyFinanceReminder, 
+  scheduleIntervalFinanceReminder,
+  checkNotificationPermissions, 
+  notifyLowBalance
+} from '../shared/nativeNotifications';
 
 // --- Theme Helper Hooks ---
 export const useThemeStyles = () => {
@@ -473,8 +483,25 @@ export const DashboardWeb: React.FC<{
   const syncWithFirebase = useFinanceStore((state) => state.syncWithFirebase);
   const loading = useFinanceStore((state) => state.loading);
 
+  const customNotificationTime = useFinanceStore((state) => state.customNotificationTime) || '20:00';
+  const lowBalanceThreshold = useFinanceStore((state) => state.lowBalanceThreshold) ?? 1000;
+  const notificationIntervalHours = useFinanceStore((state) => state.notificationIntervalHours) || 1;
+  const setCustomNotificationTime = useFinanceStore((state) => state.setCustomNotificationTime);
+  const setLowBalanceThreshold = useFinanceStore((state) => state.setLowBalanceThreshold);
+  const setNotificationIntervalHours = useFinanceStore((state) => state.setNotificationIntervalHours);
+
   const [backupMessage, setBackupMessage] = useState('');
   const [isManualSyncing, setIsManualSyncing] = useState(false);
+  const [notifPermState, setNotifPermState] = useState<string>('Checking...');
+  const [showTermsModal, setShowTermsModal] = useState(false);
+
+  useEffect(() => {
+    if (activePage === 'settings') {
+      checkNotificationPermissions().then((granted) => {
+        setNotifPermState(granted ? 'Granted' : 'Not Granted');
+      });
+    }
+  }, [activePage]);
 
   // Profile editing
   const [editName, setEditName] = useState('');
@@ -903,8 +930,11 @@ export const DashboardWeb: React.FC<{
             {activePage === 'dashboard' && (
               <div className="flex flex-col lg:flex-row gap-8 items-start w-full">
                 <div className="flex-1 space-y-8 w-full">
-                {/* Cards */}
-                <section>
+                  {/* Profit & Loss Sentinel Widget */}
+                  <ProfitLossWidget />
+
+                  {/* Cards */}
+                  <section>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-2">
                     <motion.div whileHover={{ scale: 1.02 }} className={`p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow} relative overflow-hidden`}>
                       <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl" />
@@ -1639,6 +1669,180 @@ export const DashboardWeb: React.FC<{
                     </div>
                   )}
                 </div>
+
+                {/* 6. Local Notifications & Financial Alerts Panel */}
+                <div className={`p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow}`}>
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                        <Bell className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-black tracking-wide">Local Notifications & Financial Alerts</h3>
+                        <p className="text-xs text-gray-400">Configure recurring timers, custom notification times, low money alerts in active currency, and custom audio sound effects.</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        const granted = await requestNotificationPermissions();
+                        setNotifPermState(granted ? 'Granted' : 'Not Granted');
+                      }}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border ${
+                        notifPermState === 'Granted' 
+                          ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400' 
+                          : 'bg-amber-500/10 border-amber-500/40 text-amber-400 hover:bg-amber-500/20'
+                      } cursor-pointer transition-colors`}
+                    >
+                      <ShieldCheck className="w-4 h-4" />
+                      Permission: {notifPermState}
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* 🕒 Card 1: Custom Scheduled Time Notification */}
+                    <div className={`p-5 rounded-xl border border-gray-800/60 ${cStyles.ledgerFeedBg} flex flex-col justify-between space-y-4`}>
+                      <div>
+                        <div className="flex items-center gap-2 font-bold text-sm text-gray-200 mb-1">
+                          <Clock className="w-4 h-4 text-cyan-400" /> Custom Daily Reminder Time
+                        </div>
+                        <p className="text-xs text-gray-400 mb-3">Set your preferred daily check-in notification time.</p>
+                        
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-bold tracking-widest text-gray-400 uppercase block">
+                            Select Alert Time (HH:MM)
+                          </label>
+                          <input
+                            type="time"
+                            value={customNotificationTime}
+                            onChange={(e) => {
+                              const newTime = e.target.value;
+                              setCustomNotificationTime(newTime);
+                              const [h, m] = newTime.split(':').map(Number);
+                              scheduleDailyFinanceReminder(h, m);
+                            }}
+                            className={`w-full p-2.5 rounded-xl text-sm font-bold border border-gray-700 ${cStyles.input} text-white focus:outline-none focus:border-cyan-400 transition-colors`}
+                          />
+                          <p className="text-[10px] text-cyan-400 font-medium">
+                            ✓ Scheduled daily at {customNotificationTime}
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={async () => {
+                          const [h, m] = customNotificationTime.split(':').map(Number);
+                          await scheduleDailyFinanceReminder(h, m);
+                        }}
+                        className="w-full py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border border-cyan-500/40 text-cyan-400 hover:bg-cyan-500/10 cursor-pointer transition-colors"
+                      >
+                        <Clock className="w-4 h-4" /> Save Daily Timer
+                      </button>
+                    </div>
+
+                    {/* ⏱️ Card 2: Recurring Interval Notification Timer (Default 1-Hour) */}
+                    <div className={`p-5 rounded-xl border border-gray-800/60 ${cStyles.ledgerFeedBg} flex flex-col justify-between space-y-4`}>
+                      <div>
+                        <div className="flex items-center gap-2 font-bold text-sm text-gray-200 mb-1">
+                          <RefreshCw className="w-4 h-4 text-emerald-400" /> Recurring Notification Frequency
+                        </div>
+                        <p className="text-xs text-gray-400 mb-3">Default frequency is set to Every 1 Hour with audio notification sound.</p>
+                        
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-bold tracking-widest text-gray-400 uppercase block">
+                            Interval Frequency
+                          </label>
+                          <select
+                            value={notificationIntervalHours}
+                            onChange={(e) => {
+                              const hours = parseInt(e.target.value, 10) || 1;
+                              setNotificationIntervalHours(hours);
+                              scheduleIntervalFinanceReminder(hours);
+                            }}
+                            className={`w-full p-2.5 rounded-xl text-sm font-bold border border-gray-700 ${cStyles.input} text-white focus:outline-none focus:border-emerald-400 transition-colors`}
+                          >
+                            <option value={1} className="bg-[#0B0B0F]">Every 1 Hour (Default ⭐)</option>
+                            <option value={2} className="bg-[#0B0B0F]">Every 2 Hours</option>
+                            <option value={4} className="bg-[#0B0B0F]">Every 4 Hours</option>
+                            <option value={6} className="bg-[#0B0B0F]">Every 6 Hours</option>
+                            <option value={12} className="bg-[#0B0B0F]">Every 12 Hours</option>
+                            <option value={24} className="bg-[#0B0B0F]">Every 24 Hours</option>
+                          </select>
+                          <p className="text-[10px] text-emerald-400 font-medium">
+                            ✓ Active timer: Every {notificationIntervalHours} Hour(s)
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={async () => {
+                          await scheduleIntervalFinanceReminder(notificationIntervalHours);
+                        }}
+                        className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 ${cStyles.primaryBtn}`}
+                      >
+                        <RefreshCw className="w-4 h-4" /> Activate Interval Timer
+                      </button>
+                    </div>
+
+                    {/* 🚨 Card 3: Low Money / Low Balance Warning */}
+                    <div className={`p-5 rounded-xl border border-gray-800/60 ${cStyles.ledgerFeedBg} flex flex-col justify-between space-y-4`}>
+                      <div>
+                        <div className="flex items-center gap-2 font-bold text-sm text-gray-200 mb-1">
+                          <AlertTriangle className="w-4 h-4 text-amber-400" /> Low Money Alert ({currency})
+                        </div>
+                        <p className="text-xs text-gray-400 mb-3">Sends alerts using your active currency symbol ({fmt(100).slice(0, 1)}).</p>
+                        
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-bold tracking-widest text-gray-400 uppercase block">
+                            Minimum Funds Threshold
+                          </label>
+                          <input
+                            type="number"
+                            value={lowBalanceThreshold}
+                            onChange={(e) => {
+                              const val = parseFloat(e.target.value) || 0;
+                              setLowBalanceThreshold(val);
+                            }}
+                            placeholder="1000"
+                            className={`w-full p-2.5 rounded-xl text-sm font-bold border border-gray-700 ${cStyles.input} text-white focus:outline-none focus:border-amber-400 transition-colors`}
+                          />
+                          <p className="text-[10px] text-amber-400 font-medium">
+                            Alerts if balance drops below {fmt(lowBalanceThreshold)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button
+                          onClick={async () => {
+                            const def = SUPPORTED_CURRENCIES.find(c => c.code === currency) ?? SUPPORTED_CURRENCIES[0];
+                            await notifyLowBalance(lowBalanceThreshold * 0.8, lowBalanceThreshold, def.symbol);
+                          }}
+                          className="w-full py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border border-amber-500/40 text-amber-400 hover:bg-amber-500/10 cursor-pointer transition-colors"
+                        >
+                          <AlertTriangle className="w-4 h-4" /> Test Low Money Alert
+                        </button>
+                        <button
+                          onClick={() => triggerAppUpdateModal('Version 2.5.0 build patch available')}
+                          className="w-full py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 cursor-pointer transition-colors"
+                        >
+                          <RefreshCw className="w-4 h-4" /> Trigger App Update Popup
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 pt-4 border-t border-gray-800/60 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-gray-400">
+                    <span>CoinBurst Security & Legal Compliance Protocol</span>
+                    <a
+                      href="/terms"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-emerald-400 hover:underline font-semibold flex items-center gap-1.5"
+                    >
+                      <ShieldCheck className="w-4 h-4" /> View Terms & Conditions and Privacy Policy
+                    </a>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -1903,6 +2107,9 @@ export const DashboardWeb: React.FC<{
           </div>
         )}
       </AnimatePresence>
+
+      {/* Terms & Conditions Modal */}
+      <TermsModal isOpen={showTermsModal} onClose={() => setShowTermsModal(false)} />
     </div>
   );
 };
