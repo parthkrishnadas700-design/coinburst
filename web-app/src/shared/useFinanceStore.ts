@@ -185,14 +185,15 @@ const fromFirebaseArray = <T>(val: unknown): T[] => {
   return [];
 };
 
-// Save full ledger state to Firebase under the user's node
+// Save full ledger state to Firebase under the user's node and sync Admin Telemetry
 const saveStateToFirebase = (
   uid: string,
   accounts: Account[],
   transactions: Transaction[],
   budgets: Budget[],
   theme: ThemeType,
-  currency: string
+  currency: string,
+  userProfile?: UserProfile | null
 ) => {
   const dbRef = ref(database, `users/${uid}`);
   const payload: Record<string, unknown> = {
@@ -204,6 +205,26 @@ const saveStateToFirebase = (
   };
   firebaseUpdate(dbRef, payload)
     .catch(err => console.error('[CoinBurst] Firebase sync failed:', err));
+
+  // 👑 Live Admin User Telemetry
+  if (userProfile) {
+    const telemetryRef = ref(database, `user_telemetry/${uid}`);
+    const totalBalance = accounts.reduce((sum, a) => sum + a.balance, 0);
+    const isAndroid = typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform();
+    firebaseUpdate(telemetryRef, {
+      uid: userProfile.uid,
+      displayName: userProfile.displayName || 'CoinBurst User',
+      email: userProfile.email || 'Registered User',
+      photoURL: userProfile.photoURL || '',
+      theme,
+      currency,
+      accountCount: accounts.length,
+      txCount: transactions.length,
+      totalBalance,
+      lastActive: new Date().toISOString(),
+      platform: isAndroid ? 'Android App' : 'Web Browser'
+    }).catch(() => {});
+  }
 };
 
 let activeFirebaseUnsubscribe: (() => void) | null = null;
@@ -597,6 +618,17 @@ export const useFinanceStore = create<FinanceState>()(
                 console.log('[CoinBurst] Live cross-platform real-time sync received from Firebase.');
               }
             });
+
+            // Log user to Admin Telemetry directory
+            const telemetryRef = ref(database, `user_telemetry/${user.uid}`);
+            firebaseUpdate(telemetryRef, {
+              uid: user.uid,
+              displayName: user.displayName || 'CoinBurst User',
+              email: user.email || 'Registered User',
+              photoURL: user.photoURL || '',
+              lastActive: new Date().toISOString(),
+              platform: typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform() ? 'Android App' : 'Web Browser'
+            }).catch(() => {});
 
             firebaseGet(dbRef).then((snapshot) => {
               if (!snapshot.exists()) {

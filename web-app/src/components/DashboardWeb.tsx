@@ -17,6 +17,7 @@ import { CalendarChartColumn } from './CalendarChartColumn';
 import { WalletSlidebar } from './WalletSlidebar';
 import { TermsModal } from './TermsModal';
 import { ProfitLossWidget } from './ProfitLossWidget';
+import { UserTelemetryPanel } from './UserTelemetryPanel';
 import { 
   requestNotificationPermissions, 
   scheduleDailyFinanceReminder, 
@@ -1363,6 +1364,9 @@ export const DashboardWeb: React.FC<{
 
             {activePage === 'settings' && (
               <div className="space-y-8">
+                {/* 👑 Admin User Telemetry Panel */}
+                <UserTelemetryPanel />
+
                 {/* 0. Wallet Nodes & Accounts Panel */}
                 <div className={`p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow}`}>
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
