@@ -23,6 +23,17 @@ export const Layout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Lock body scroll when mobile sidebar slide drawer is open
+  React.useEffect(() => {
+    if (isMobileSidebarOpen) {
+      const originalStyle = window.getComputedStyle(document.body).overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalStyle === 'hidden' ? '' : originalStyle;
+      };
+    }
+  }, [isMobileSidebarOpen]);
+
   const handleSidebarSync = async () => {
     if (syncWithFirebase) {
       setIsSyncing(true);
