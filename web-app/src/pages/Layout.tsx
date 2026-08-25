@@ -10,12 +10,16 @@ import { useThemeStyles } from '../components/DashboardWeb'; // temporarily impo
 
 import { AdminBroadcastBanner } from '../components/AdminBroadcastBanner';
 import { useScrollLock } from '../shared/useScrollLock';
+import { CommandPaletteModal } from '../components/CommandPaletteModal';
+import { FloatingNavDock } from '../components/FloatingNavDock';
 
 export const Layout: React.FC = () => {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+
   const theme = useFinanceStore(state => state.theme);
   const user = useFinanceStore(state => state.user);
   const syncWithFirebase = useFinanceStore(state => state.syncWithFirebase);
@@ -26,6 +30,18 @@ export const Layout: React.FC = () => {
 
   // 🔒 Lock background scrolling completely when mobile sidebar is open
   useScrollLock(isMobileSidebarOpen);
+
+  // ⚡ Global Keyboard Shortcut Listener (Ctrl + K / Cmd + K to open Command Palette)
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handleSidebarSync = async () => {
     if (syncWithFirebase) {
@@ -246,6 +262,15 @@ export const Layout: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
+
+      {/* 🚀 Multi-Navigational Floating Action Dock */}
+      <FloatingNavDock onOpenCommandPalette={() => setIsCommandPaletteOpen(true)} />
+
+      {/* ⚡ Multi-Navigational Universal Command Palette (Ctrl + K) */}
+      <CommandPaletteModal 
+        isOpen={isCommandPaletteOpen} 
+        onClose={() => setIsCommandPaletteOpen(false)} 
+      />
     </div>
   );
 };
