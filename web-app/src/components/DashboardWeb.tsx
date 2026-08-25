@@ -452,8 +452,8 @@ const MarkdownText: React.FC<{ text: string }> = ({ text }) => {
 
 // --- Main Multipage Dashboard Web Component ---
 export const DashboardWeb: React.FC<{ 
-  onNavigate: (page: 'dashboard' | 'transactions' | 'budgets' | 'settings' | 'ai' | 'about') => void;
-  activePage: 'dashboard' | 'transactions' | 'budgets' | 'settings' | 'ai' | 'about';
+  onNavigate: (page: 'dashboard' | 'transactions' | 'budgets' | 'settings' | 'ai' | 'about' | 'burn-rate' | 'split-bills') => void;
+  activePage: 'dashboard' | 'transactions' | 'budgets' | 'settings' | 'ai' | 'about' | 'burn-rate' | 'split-bills';
   onOpenForm?: () => void;
   onEditTransaction?: (tx: Transaction) => void;
 }> = ({ onNavigate, activePage, onOpenForm, onEditTransaction }) => {
@@ -892,9 +892,11 @@ export const DashboardWeb: React.FC<{
               {activePage === 'dashboard' && 'Financial Nexus'}
               {activePage === 'transactions' && 'Vault Transaction Ledger'}
               {activePage === 'budgets' && 'Dynamic Limit Enforcers'}
-               {activePage === 'settings' && 'User Settings'}
+              {activePage === 'settings' && 'User Settings'}
               {activePage === 'ai' && 'AI Portfolio Advisor'}
               {activePage === 'about' && 'About Wealth Nexus'}
+              {activePage === 'burn-rate' && 'AI Burn-Rate Forecast'}
+              {activePage === 'split-bills' && 'Group Bill Splitter'}
             </h2>
           </div>
 
@@ -1939,6 +1941,10 @@ export const DashboardWeb: React.FC<{
                 </div>
               </div>
             )}
+
+            {activePage === 'burn-rate' && <BurnRatePredictor />}
+
+            {activePage === 'split-bills' && <GroupBillSplitter />}
           </motion.div>
         </AnimatePresence>
       </main>

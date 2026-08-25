@@ -4,7 +4,7 @@ import { signOutUser } from "../shared/firebase";
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  BarChart3, ArrowUpRight, PiggyBank, Bot, Settings, Info, LogOut, RefreshCw, X
+  BarChart3, ArrowUpRight, PiggyBank, Bot, Settings, Info, LogOut, RefreshCw, X, Flame, Users
 } from 'lucide-react';
 import { useThemeStyles } from '../components/DashboardWeb'; // temporarily importing styles
 
@@ -35,6 +35,8 @@ export const Layout: React.FC = () => {
     { id: '/home', label: 'Dashboard', icon: BarChart3 },
     { id: '/transactions', label: 'Ledger & Entry', icon: ArrowUpRight },
     { id: '/budgets', label: 'Smart Budgets', icon: PiggyBank },
+    { id: '/burn-rate', label: 'AI Burn Forecast', icon: Flame },
+    { id: '/split-bills', label: 'Group Splitter', icon: Users },
     { id: '/ai', label: 'AI Advisor', icon: Bot },
     { id: '/settings', label: 'User Theme', icon: Settings },
     { id: '/about', label: 'About Nexus', icon: Info }

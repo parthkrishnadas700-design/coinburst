@@ -115,6 +115,8 @@ function MainApp() {
               <Route path="home" element={<Dashboard />} />
               <Route path="transactions" element={<DashboardWeb activePage="transactions" onNavigate={() => {}} onOpenForm={() => { setIsFormOpen(true); setEditingTx(null); }} onEditTransaction={(tx) => { setEditingTx(tx); setIsFormOpen(true); }} />} />
               <Route path="budgets" element={<DashboardWeb activePage="budgets" onNavigate={() => {}} onOpenForm={() => {}} onEditTransaction={() => {}} />} />
+              <Route path="burn-rate" element={<DashboardWeb activePage="burn-rate" onNavigate={() => {}} onOpenForm={() => {}} onEditTransaction={() => {}} />} />
+              <Route path="split-bills" element={<DashboardWeb activePage="split-bills" onNavigate={() => {}} onOpenForm={() => {}} onEditTransaction={() => {}} />} />
               <Route path="settings" element={<DashboardWeb activePage="settings" onNavigate={() => {}} onOpenForm={() => {}} onEditTransaction={() => {}} />} />
               <Route path="ai" element={<DashboardWeb activePage="ai" onNavigate={() => {}} onOpenForm={() => {}} onEditTransaction={() => {}} />} />
               <Route path="about" element={<DashboardWeb activePage="about" onNavigate={() => {}} onOpenForm={() => {}} onEditTransaction={() => {}} />} />
