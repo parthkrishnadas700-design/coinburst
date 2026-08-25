@@ -5,6 +5,7 @@ const config: CapacitorConfig = {
   appName: 'CoinBurst',
   webDir: 'dist',
   server: {
+    url: 'https://coinburst-5bdc5.web.app',
     androidScheme: 'https',
     cleartext: true,
   },
