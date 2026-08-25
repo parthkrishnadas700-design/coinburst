@@ -11,11 +11,13 @@ import { useThemeStyles } from '../components/DashboardWeb'; // temporarily impo
 import { AdminBroadcastBanner } from '../components/AdminBroadcastBanner';
 import { useScrollLock } from '../shared/useScrollLock';
 import { CommandPaletteModal } from '../components/CommandPaletteModal';
+import { ExitConfirmationModal } from '../components/ExitConfirmationModal';
 
 export const Layout: React.FC = () => {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showExitModal, setShowExitModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
@@ -29,6 +31,21 @@ export const Layout: React.FC = () => {
 
   // 🔒 Lock background scrolling completely when mobile sidebar is open
   useScrollLock(isMobileSidebarOpen);
+
+  // 🚪 Intercept back gesture on root page to show Exit Confirmation Modal
+  React.useEffect(() => {
+    if (location.pathname === '/home' || location.pathname === '/') {
+      window.history.pushState({ isRoot: true }, '');
+
+      const handlePopState = () => {
+        setShowExitModal(true);
+        window.history.pushState({ isRoot: true }, '');
+      };
+
+      window.addEventListener('popstate', handlePopState);
+      return () => window.removeEventListener('popstate', handlePopState);
+    }
+  }, [location.pathname]);
 
   // ⚡ Global Keyboard Shortcut Listener (Ctrl + K / Cmd + K to open Command Palette)
   React.useEffect(() => {
@@ -266,6 +283,12 @@ export const Layout: React.FC = () => {
       <CommandPaletteModal 
         isOpen={isCommandPaletteOpen} 
         onClose={() => setIsCommandPaletteOpen(false)} 
+      />
+
+      {/* 🚪 Exit Confirmation Modal (Triggers when user attempts to exit via back gesture) */}
+      <ExitConfirmationModal 
+        isOpen={showExitModal} 
+        onClose={() => setShowExitModal(false)} 
       />
     </div>
   );

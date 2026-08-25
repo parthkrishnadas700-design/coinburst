@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useFinanceStore, formatCurrency, SUPPORTED_CURRENCIES } from '../shared/useFinanceStore';
 import type { ThemeType, Transaction } from '../shared/useFinanceStore';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -10,7 +9,7 @@ import {
 import { 
   Plus, Trash2, ArrowUpRight, ArrowDownRight, Search, ChevronDown, 
   TrendingUp, PiggyBank, Bot, Download, Sparkles, Pencil,
-  Upload, Database, RefreshCw, Bell, Clock, ShieldCheck, Camera, ArrowLeft
+  Upload, Database, RefreshCw, Bell, Clock, ShieldCheck, Camera
 } from 'lucide-react';
 import { generateAIResponse } from '../utils/aiCommandEngine';
 import { AboutWeb } from './AboutWeb';
@@ -459,7 +458,6 @@ export const DashboardWeb: React.FC<{
   onOpenForm?: () => void;
   onEditTransaction?: (tx: Transaction) => void;
 }> = ({ onNavigate, activePage, onOpenForm, onEditTransaction }) => {
-  const navigate = useNavigate();
   const cStyles = useThemeStyles();
   const theme = useFinanceStore((state) => state.theme);
   const setTheme = useFinanceStore((state) => state.setTheme);
@@ -892,29 +890,18 @@ export const DashboardWeb: React.FC<{
       <main className="flex-1 p-4 md:p-8 overflow-y-auto w-full relative z-10">
         {/* Header Banner */}
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-          <div className="flex items-center gap-3">
-            {activePage !== 'dashboard' && (
-              <button
-                onClick={() => navigate(-1)}
-                className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer border border-white/10 shrink-0 shadow-md"
-                title="Go Back (Reverse Trace)"
-              >
-                <ArrowLeft className="w-4 h-4 text-cyan-400" /> Back
-              </button>
-            )}
-            <div>
-              <span className="text-xs uppercase tracking-widest text-gray-400 font-black">Workspace Ledger</span>
-              <h2 className="text-3xl font-black tracking-tight mt-1">
-                {activePage === 'dashboard' && 'Financial Nexus'}
-                {activePage === 'transactions' && 'Vault Transaction Ledger'}
-                {activePage === 'budgets' && 'Dynamic Limit Enforcers'}
-                {activePage === 'settings' && 'User Settings'}
-                {activePage === 'ai' && 'AI Portfolio Advisor'}
-                {activePage === 'about' && 'About Wealth Nexus'}
-                {activePage === 'burn-rate' && 'AI Burn-Rate Forecast'}
-                {activePage === 'split-bills' && 'Group Bill Splitter'}
-              </h2>
-            </div>
+          <div>
+            <span className="text-xs uppercase tracking-widest text-gray-400 font-black">Workspace Ledger</span>
+            <h2 className="text-3xl font-black tracking-tight mt-1">
+              {activePage === 'dashboard' && 'Financial Nexus'}
+              {activePage === 'transactions' && 'Vault Transaction Ledger'}
+              {activePage === 'budgets' && 'Dynamic Limit Enforcers'}
+              {activePage === 'settings' && 'User Settings'}
+              {activePage === 'ai' && 'AI Portfolio Advisor'}
+              {activePage === 'about' && 'About Wealth Nexus'}
+              {activePage === 'burn-rate' && 'AI Burn-Rate Forecast'}
+              {activePage === 'split-bills' && 'Group Bill Splitter'}
+            </h2>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
