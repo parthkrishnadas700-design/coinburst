@@ -2,6 +2,10 @@
   "rules": {
     ".read": false,
     ".write": false,
+    "shared_groups": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
     "admin_broadcast": {
       ".read": "auth != null",
       ".write": "auth != null && auth.token.email == 'parthkrishnadas700@gmail.com'"
