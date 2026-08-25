@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { database } from '../shared/firebase';
-import { ref, onValue } from 'firebase/database';
+import { ref, onValue, update as firebaseUpdate } from 'firebase/database';
 import { Users, Smartphone, Globe, RefreshCw, Search, Clock } from 'lucide-react';
 import { useThemeStyles } from './DashboardWeb';
+import { useFinanceStore } from '../shared/useFinanceStore';
 
 export interface TelemetryUser {
   uid: string;
@@ -23,45 +24,58 @@ export const UserTelemetryPanel: React.FC = () => {
   const [users, setUsers] = useState<TelemetryUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const currentUser = useFinanceStore(state => state.user);
+  const accounts = useFinanceStore(state => state.accounts);
+  const transactions = useFinanceStore(state => state.transactions);
 
   useEffect(() => {
+    // 0. Immedately push current user to telemetry node
+    if (currentUser) {
+      const telemetryRef = ref(database, `user_telemetry/${currentUser.uid}`);
+      const totalBalance = accounts.reduce((sum, a) => sum + a.balance, 0);
+      const isAndroid = typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform();
+      firebaseUpdate(telemetryRef, {
+        uid: currentUser.uid,
+        displayName: currentUser.displayName || 'CoinBurst User',
+        email: currentUser.email || 'Registered User',
+        photoURL: currentUser.photoURL || '',
+        accountCount: accounts.length,
+        txCount: transactions.length,
+        totalBalance,
+        lastActive: new Date().toISOString(),
+        platform: isAndroid ? 'Android App' : 'Web Browser'
+      }).catch(() => {});
+    }
+
     // 1. Listen to user_telemetry node
     const telemetryRef = ref(database, 'user_telemetry');
-    const usersRef = ref(database, 'users');
 
     const unsubscribeTelemetry = onValue(telemetryRef, (snapshot) => {
       const val = snapshot.val();
       if (val) {
         const userList: TelemetryUser[] = Object.values(val);
         setUsers(userList);
-        setLoading(false);
-      } else {
-        // Fallback: check users node
-        onValue(usersRef, (usersSnapshot) => {
-          const usersVal = usersSnapshot.val();
-          if (usersVal) {
-            const fallbackList: TelemetryUser[] = Object.entries(usersVal).map(([uid, data]: [string, any]) => ({
-              uid,
-              displayName: data.profile?.displayName || data.displayName || 'CoinBurst User',
-              email: data.profile?.email || data.email || 'Registered User',
-              photoURL: data.profile?.photoURL || data.photoURL || '',
-              theme: data.theme || 'dark',
-              currency: data.currency || 'INR',
-              accountCount: data.accounts ? (Array.isArray(data.accounts) ? data.accounts.length : Object.keys(data.accounts).length) : 0,
-              txCount: data.transactions ? (Array.isArray(data.transactions) ? data.transactions.length : Object.keys(data.transactions).length) : 0,
-              totalBalance: data.accounts ? (Array.isArray(data.accounts) ? data.accounts : Object.values(data.accounts)).reduce((acc: number, a: any) => acc + (a.balance || 0), 0) : 0,
-              lastActive: data.lastActive || new Date().toISOString(),
-              platform: 'Web / Mobile App'
-            }));
-            setUsers(fallbackList);
-          }
-          setLoading(false);
-        }, { onlyOnce: true });
+      } else if (currentUser) {
+        // Show current user as fallback if database node is empty
+        const totalBalance = accounts.reduce((sum, a) => sum + a.balance, 0);
+        const isAndroid = typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform();
+        setUsers([{
+          uid: currentUser.uid,
+          displayName: currentUser.displayName || 'CoinBurst User',
+          email: currentUser.email || 'Registered User',
+          photoURL: currentUser.photoURL || '',
+          accountCount: accounts.length,
+          txCount: transactions.length,
+          totalBalance,
+          lastActive: new Date().toISOString(),
+          platform: isAndroid ? 'Android App' : 'Web Browser'
+        }]);
       }
+      setLoading(false);
     });
 
     return () => unsubscribeTelemetry();
-  }, []);
+  }, [currentUser, accounts, transactions]);
 
   const filteredUsers = users.filter(u => 
     u.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||

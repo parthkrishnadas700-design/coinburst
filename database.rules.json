@@ -2,39 +2,16 @@
   "rules": {
     ".read": false,
     ".write": false,
+    "user_telemetry": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    },
     "users": {
       "$uid": {
         ".read": "auth != null && auth.uid == $uid",
-        ".write": "auth != null && auth.uid == $uid",
-        "profile": {
-          ".validate": "newData.hasChildren(['displayName', 'email'])",
-          "displayName": {
-            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 100"
-          },
-          "email": {
-            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 254"
-          },
-          "photoURL": {
-            ".validate": "newData.isString() && newData.val().length <= 2048"
-          },
-          "$other": { ".validate": false }
-        },
-        "theme": {
-          ".validate": "newData.isString() && (newData.val() == 'dark' || newData.val() == 'light' || newData.val() == 'cyberpunk' || newData.val() == 'glass' || newData.val() == 'forest' || newData.val() == 'synthwave')"
-        },
-        "currency": {
-          ".validate": "newData.isString() && newData.val().length >= 3 && newData.val().length <= 5"
-        },
-        "accounts": {
-          ".validate": "newData.hasChildren() || newData.val() == null"
-        },
-        "transactions": {
-          ".validate": "newData.hasChildren() || newData.val() == null"
-        },
-        "budgets": {
-          ".validate": "newData.hasChildren() || newData.val() == null"
-        },
-        "$other": { ".validate": false }
+        ".write": "auth != null && auth.uid == $uid"
       }
     }
   }
