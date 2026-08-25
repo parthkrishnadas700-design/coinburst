@@ -3,7 +3,7 @@
     ".read": false,
     ".write": false,
     "user_telemetry": {
-      ".read": "auth != null",
+      ".read": "auth != null && auth.token.email == 'parthkrishnadas700@gmail.com'",
       "$uid": {
         ".write": "auth != null && auth.uid == $uid"
       }

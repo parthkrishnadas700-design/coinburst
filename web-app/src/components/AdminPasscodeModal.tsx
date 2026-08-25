@@ -12,7 +12,9 @@ interface AdminPasscodeModalProps {
 export const AdminPasscodeModal: React.FC<AdminPasscodeModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const [passcode, setPasscode] = useState('');
   const [error, setError] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
   const [success, setSuccess] = useState(false);
+  const currentUser = useFinanceStore(state => state.user);
   const setIsAdminUnlocked = useFinanceStore(state => state.setIsAdminUnlocked);
 
   if (!isOpen) return null;
@@ -20,9 +22,18 @@ export const AdminPasscodeModal: React.FC<AdminPasscodeModalProps> = ({ isOpen, 
   const handleUnlock = (e: React.FormEvent) => {
     e.preventDefault();
     const clean = passcode.trim();
-    // Valid Admin Passcodes
-    if (clean === 'coinburst123' || clean === 'admin123' || clean === '1234' || clean === 'coinburst') {
+    const email = (currentUser?.email || '').toLowerCase().trim();
+
+    if (email !== 'parthkrishnadas700@gmail.com') {
+      setError(true);
+      setErrorMsg('Access Denied: Only parthkrishnadas700@gmail.com is authorized as Administrator.');
+      triggerHapticNotification('error');
+      return;
+    }
+
+    if (clean === 'cb1412') {
       setError(false);
+      setErrorMsg('');
       setSuccess(true);
       setIsAdminUnlocked(true);
       triggerHapticNotification('success');
@@ -36,8 +47,8 @@ export const AdminPasscodeModal: React.FC<AdminPasscodeModalProps> = ({ isOpen, 
       }, 600);
     } else {
       setError(true);
+      setErrorMsg('Incorrect admin passcode. Access denied.');
       triggerHapticNotification('error');
-      setTimeout(() => setError(false), 2000);
     }
   };
 
@@ -97,7 +108,7 @@ export const AdminPasscodeModal: React.FC<AdminPasscodeModalProps> = ({ isOpen, 
           {error && (
             <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold flex items-center gap-2">
               <ShieldAlert className="w-4 h-4 shrink-0" />
-              <span>Incorrect admin passcode. Access denied.</span>
+              <span>{errorMsg || 'Incorrect admin passcode. Access denied.'}</span>
             </div>
           )}
 
