@@ -2,6 +2,10 @@
   "rules": {
     ".read": false,
     ".write": false,
+    "admin_broadcast": {
+      ".read": "auth != null",
+      ".write": "auth != null && auth.token.email == 'parthkrishnadas700@gmail.com'"
+    },
     "user_telemetry": {
       ".read": "auth != null && auth.token.email == 'parthkrishnadas700@gmail.com'",
       "$uid": {

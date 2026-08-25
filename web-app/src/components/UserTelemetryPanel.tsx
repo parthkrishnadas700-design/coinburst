@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { database } from '../shared/firebase';
-import { ref, onValue, update as firebaseUpdate } from 'firebase/database';
-import { Users, Smartphone, Globe, RefreshCw, Search, Clock } from 'lucide-react';
+import { ref, onValue, set as firebaseSet, update as firebaseUpdate } from 'firebase/database';
+import { Users, Smartphone, Globe, RefreshCw, Search, Clock, Megaphone, Send, Trash2 } from 'lucide-react';
 import { useThemeStyles } from './DashboardWeb';
 import { useFinanceStore } from '../shared/useFinanceStore';
+import { triggerHapticNotification, showNativeToast } from '../shared/nativeBridge';
 
 export interface TelemetryUser {
   uid: string;
@@ -138,6 +139,9 @@ export const UserTelemetryPanel: React.FC = () => {
         </div>
       </div>
 
+      {/* 📢 Admin Remote Broadcast Publisher */}
+      <AdminBroadcastPublisher />
+
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className={`p-4 rounded-xl border ${cStyles.ledgerFeedBg} flex items-center justify-between`}>
@@ -238,6 +242,146 @@ export const UserTelemetryPanel: React.FC = () => {
           ))}
         </div>
       )}
+    </div>
+  );
+};
+
+const AdminBroadcastPublisher: React.FC = () => {
+  const cStyles = useThemeStyles();
+  const [title, setTitle] = useState('');
+  const [message, setMessage] = useState('');
+  const [type, setType] = useState<'info' | 'success' | 'warning'>('info');
+  const [actionUrl, setActionUrl] = useState('');
+  const [activeBroadcast, setActiveBroadcast] = useState<any>(null);
+
+  useEffect(() => {
+    const broadcastRef = ref(database, 'admin_broadcast');
+    const unsubscribe = onValue(broadcastRef, (snapshot) => {
+      const val = snapshot.val();
+      setActiveBroadcast(val && val.active ? val : null);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handlePublish = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim() || !message.trim()) return;
+
+    try {
+      const broadcastRef = ref(database, 'admin_broadcast');
+      await firebaseSet(broadcastRef, {
+        title: title.trim(),
+        message: message.trim(),
+        type,
+        actionUrl: actionUrl.trim() || null,
+        actionText: actionUrl.trim() ? 'Learn More' : null,
+        createdAt: new Date().toISOString(),
+        active: true
+      });
+      triggerHapticNotification('success');
+      showNativeToast('Broadcast Published to All App Users!');
+      setTitle('');
+      setMessage('');
+      setActionUrl('');
+    } catch (err) {
+      console.error('Broadcast failed:', err);
+      showNativeToast('Publish Error');
+    }
+  };
+
+  const handleClear = async () => {
+    try {
+      const broadcastRef = ref(database, 'admin_broadcast');
+      await firebaseSet(broadcastRef, { active: false });
+      triggerHapticNotification('success');
+      showNativeToast('Broadcast Cleared');
+    } catch (err) {
+      console.error('Clear failed:', err);
+    }
+  };
+
+  return (
+    <div className={`p-5 rounded-xl ${cStyles.ledgerFeedBg} border border-purple-500/30 mb-6 space-y-4`}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Megaphone className="w-5 h-5 text-purple-400 animate-bounce" />
+          <h4 className="font-black text-sm text-white tracking-wide">Publish Global Remote Announcement</h4>
+        </div>
+        {activeBroadcast && (
+          <button
+            onClick={handleClear}
+            className="px-3 py-1 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-bold flex items-center gap-1 hover:bg-red-500/30 transition-colors cursor-pointer"
+          >
+            <Trash2 className="w-3.5 h-3.5" /> Clear Live Notice
+          </button>
+        )}
+      </div>
+
+      {activeBroadcast && (
+        <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20 text-xs text-purple-300">
+          <span className="font-bold text-white uppercase tracking-wider text-[10px] block">Currently Live on All App Devices:</span>
+          <strong>{activeBroadcast.title}</strong>: {activeBroadcast.message}
+        </div>
+      )}
+
+      <form onSubmit={handlePublish} className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+        <div>
+          <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">Announcement Title</label>
+          <input
+            type="text"
+            required
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="e.g. System Maintenance / New Feature v2.6 Released!"
+            className={`w-full p-2.5 rounded-lg border border-gray-700 ${cStyles.input} font-bold text-white focus:outline-none focus:border-purple-400`}
+          />
+        </div>
+
+        <div>
+          <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">Notice Banner Style</label>
+          <select
+            value={type}
+            onChange={(e) => setType(e.target.value as any)}
+            className={`w-full p-2.5 rounded-lg border border-gray-700 ${cStyles.input} font-bold text-white focus:outline-none focus:border-purple-400`}
+          >
+            <option value="info">Purple Cyan Info Banner</option>
+            <option value="success">Emerald Teal Success Banner</option>
+            <option value="warning">Amber Red Alert Banner</option>
+          </select>
+        </div>
+
+        <div className="sm:col-span-2">
+          <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">Announcement Message</label>
+          <textarea
+            required
+            rows={2}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Write the live message broadcast to be displayed to all online web & mobile users..."
+            className={`w-full p-2.5 rounded-lg border border-gray-700 ${cStyles.input} font-bold text-white focus:outline-none focus:border-purple-400`}
+          />
+        </div>
+
+        <div className="sm:col-span-2 flex flex-col sm:flex-row gap-3 items-end">
+          <div className="flex-1 w-full">
+            <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">Optional Action URL Link</label>
+            <input
+              type="url"
+              value={actionUrl}
+              onChange={(e) => setActionUrl(e.target.value)}
+              placeholder="https://coinburst-5bdc5.web.app (Optional link for Learn More button)"
+              className={`w-full p-2.5 rounded-lg border border-gray-700 ${cStyles.input} font-bold text-white focus:outline-none focus:border-purple-400`}
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 font-bold text-white text-xs flex items-center justify-center gap-1.5 shadow-lg transition-all cursor-pointer shrink-0"
+          >
+            <Send className="w-4 h-4" /> Publish Broadcast Live
+          </button>
+        </div>
+      </form>
     </div>
   );
 };

@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import { useThemeStyles } from '../components/DashboardWeb'; // temporarily importing styles
 
+import { AdminBroadcastBanner } from '../components/AdminBroadcastBanner';
+
 export const Layout: React.FC = () => {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -139,6 +141,7 @@ export const Layout: React.FC = () => {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
+        <AdminBroadcastBanner />
         <div className={`md:hidden flex items-center justify-between px-4 py-3 border-b ${theme === 'cyberpunk' ? 'border-[#FF007F]' : 'border-gray-800'} ${cStyles.cardBg} sticky top-0 z-20 w-full`}>
           <div className="flex items-center gap-3">
             <button 

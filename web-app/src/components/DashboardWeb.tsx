@@ -9,7 +9,7 @@ import {
 import { 
   Plus, Trash2, ArrowUpRight, ArrowDownRight, Search, ChevronDown, 
   TrendingUp, PiggyBank, Bot, Download, Sparkles, Pencil,
-  Upload, Database, RefreshCw, Bell, Clock, ShieldCheck
+  Upload, Database, RefreshCw, Bell, Clock, ShieldCheck, Camera
 } from 'lucide-react';
 import { generateAIResponse } from '../utils/aiCommandEngine';
 import { AboutWeb } from './AboutWeb';
@@ -18,6 +18,9 @@ import { WalletSlidebar } from './WalletSlidebar';
 import { TermsModal } from './TermsModal';
 import { ProfitLossWidget } from './ProfitLossWidget';
 import { UserTelemetryPanel } from './UserTelemetryPanel';
+import { ReceiptScannerModal } from './ReceiptScannerModal';
+import { BurnRatePredictor } from './BurnRatePredictor';
+import { GroupBillSplitter } from './GroupBillSplitter';
 import { 
   requestNotificationPermissions, 
   scheduleDailyFinanceReminder, 
@@ -509,6 +512,7 @@ export const DashboardWeb: React.FC<{
 
   // Add Account modal state
   const [showAddAccount, setShowAddAccount] = useState(false);
+  const [showReceiptScanner, setShowReceiptScanner] = useState(false);
   const [newAccName, setNewAccName] = useState('');
   const [newAccType, setNewAccType] = useState<'cash' | 'bank' | 'credit'>('cash');
   const [newAccBalance, setNewAccBalance] = useState('');
@@ -896,6 +900,13 @@ export const DashboardWeb: React.FC<{
 
           <div className="flex flex-wrap items-center gap-3">
             <button
+              onClick={() => setShowReceiptScanner(true)}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-white shadow-lg cursor-pointer transition-all"
+              title="Scan Receipt Bill with AI OCR"
+            >
+              <Camera className="w-4 h-4" /> Scan Receipt
+            </button>
+            <button
               onClick={() => setShowAddAccount(true)}
               className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold ${cStyles.primaryBtn}`}
               title="Create New Wallet Node"
@@ -1082,6 +1093,12 @@ export const DashboardWeb: React.FC<{
                     </div>
                   </div>
                 </section>
+
+                {/* 🔮 AI Burn-Rate & Financial Runway Predictor */}
+                <BurnRatePredictor />
+
+                {/* 👥 Group Bill Splitter & Shared Ledger */}
+                <GroupBillSplitter />
 
                 {/* Ledger Feed */}
                 <section className={`p-4 sm:p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow}`}>
@@ -2064,6 +2081,9 @@ export const DashboardWeb: React.FC<{
 
       {/* Terms & Conditions Modal */}
       <TermsModal isOpen={showTermsModal} onClose={() => setShowTermsModal(false)} />
+
+      {/* 📷 AI Smart Receipt & Bill Scanner Modal */}
+      <ReceiptScannerModal isOpen={showReceiptScanner} onClose={() => setShowReceiptScanner(false)} />
     </div>
   );
 };
