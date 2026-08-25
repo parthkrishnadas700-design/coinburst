@@ -4,6 +4,10 @@ const config: CapacitorConfig = {
   appId: 'com.coinburst.app',
   appName: 'CoinBurst',
   webDir: 'dist',
+  server: {
+    androidScheme: 'https',
+    cleartext: true,
+  },
   plugins: {
     GoogleAuth: {
       scopes: ['profile', 'email'],
