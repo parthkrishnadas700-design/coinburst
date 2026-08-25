@@ -171,3 +171,62 @@ html, body, #root {
 .custom-calendar-wrapper .react-calendar__tile--active { background: #3B82F6; color: white; }
 .custom-calendar-wrapper .react-calendar__tile--active:enabled:hover, .custom-calendar-wrapper .react-calendar__tile--active:enabled:focus { background: #2563EB; }
 
+/* Premium UI Finishing & Micro-interactions */
+.glass-panel {
+  background: rgba(15, 12, 32, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-card-interactive {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease;
+}
+.glass-card-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px -8px rgba(0, 255, 136, 0.15);
+}
+
+.gradient-text-emerald {
+  background: linear-gradient(135deg, #00FF88 0%, #00E5FF 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-text-cyber {
+  background: linear-gradient(135deg, #FF007F 0%, #00FF88 50%, #00E5FF 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.shimmer-badge {
+  position: relative;
+  overflow: hidden;
+}
+.shimmer-badge::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    60deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 70%
+  );
+  transform: rotate(30deg);
+  animation: shimmerSweep 4s infinite;
+}
+@keyframes shimmerSweep {
+  0% { transform: translateX(-100%) rotate(30deg); }
+  100% { transform: translateX(100%) rotate(30deg); }
+}
+
+/* Smooth Focus Rings */
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 2px solid rgba(16, 185, 129, 0.6);
+  outline-offset: 2px;
+}
+

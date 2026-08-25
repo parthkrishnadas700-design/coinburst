@@ -112,7 +112,10 @@ export const Layout: React.FC = () => {
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold truncate">{user.displayName}</p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-sm font-bold truncate">{user.displayName}</p>
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" title="Cloud Synced Live" />
+                </div>
                 <p className="text-[10px] text-gray-400 truncate">{user.email}</p>
               </div>
               <button

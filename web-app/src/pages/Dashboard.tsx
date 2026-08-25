@@ -56,23 +56,60 @@ export const Dashboard: React.FC = () => {
 
     return (
     <div className="space-y-6">
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
-          <span className="text-xs uppercase tracking-widest text-gray-400 font-black">Workspace Ledger</span>
-          <h2 className="text-3xl font-black tracking-tight mt-1">Financial Nexus</h2>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-mono uppercase tracking-widest mb-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" /> Realtime Vault Sync
+          </div>
+          <h2 className="text-3xl font-black tracking-tight mt-1 font-['Poppins']">Financial Nexus</h2>
         </div>
-        <div className={`flex items-center gap-4 p-2 rounded-xl border ${cStyles.headerAccent}`}>
+        <div className={`flex items-center gap-4 p-3 rounded-2xl border ${cStyles.headerAccent} shadow-lg`}>
           <div className="text-right">
-            <span className="text-[10px] text-gray-400 block uppercase tracking-widest">Aggregate Net Worth</span>
-            <span className="text-xl font-mono font-black text-emerald-400">
+            <span className="text-[10px] text-gray-400 block uppercase tracking-widest font-bold">Aggregate Net Worth</span>
+            <span className="text-2xl font-mono font-black text-emerald-400">
               {fmt(totalBalance)}
             </span>
           </div>
-          <div className="p-3 bg-emerald-500/10 rounded-lg text-emerald-400 transition-transform duration-300 hover:scale-125">
-            <TrendingUp className="w-5 h-5" />
+          <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400 transition-transform duration-300 hover:scale-110 border border-emerald-500/20">
+            <TrendingUp className="w-6 h-6" />
           </div>
         </div>
       </header>
+
+      {/* Summary Micro Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className={`p-4 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow} border flex items-center justify-between transition-all duration-300 hover:-translate-y-0.5`}>
+          <div>
+            <span className="text-[10px] uppercase font-bold tracking-widest text-gray-400">Total Income</span>
+            <p className="text-lg font-mono font-black text-emerald-400 mt-0.5">+{fmt(totalIncome)}</p>
+          </div>
+          <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <ArrowUpRight className="w-5 h-5" />
+          </div>
+        </div>
+
+        <div className={`p-4 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow} border flex items-center justify-between transition-all duration-300 hover:-translate-y-0.5`}>
+          <div>
+            <span className="text-[10px] uppercase font-bold tracking-widest text-gray-400">Total Expense</span>
+            <p className="text-lg font-mono font-black text-red-400 mt-0.5">-{fmt(totalExpense)}</p>
+          </div>
+          <div className="p-2.5 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20">
+            <ArrowDownRight className="w-5 h-5" />
+          </div>
+        </div>
+
+        <div className={`p-4 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow} border flex items-center justify-between transition-all duration-300 hover:-translate-y-0.5`}>
+          <div>
+            <span className="text-[10px] uppercase font-bold tracking-widest text-gray-400">Net Retention</span>
+            <p className="text-lg font-mono font-black text-cyan-400 mt-0.5">
+              {totalIncome > 0 ? Math.max(0, Math.round(((totalIncome - totalExpense) / totalIncome) * 100)) : 0}% Saved
+            </p>
+          </div>
+          <div className="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+            <Activity className="w-5 h-5" />
+          </div>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         
