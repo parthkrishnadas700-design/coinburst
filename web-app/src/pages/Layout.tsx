@@ -11,7 +11,6 @@ import { useThemeStyles } from '../components/DashboardWeb'; // temporarily impo
 import { AdminBroadcastBanner } from '../components/AdminBroadcastBanner';
 import { useScrollLock } from '../shared/useScrollLock';
 import { CommandPaletteModal } from '../components/CommandPaletteModal';
-import { FloatingNavDock } from '../components/FloatingNavDock';
 
 export const Layout: React.FC = () => {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -263,10 +262,7 @@ export const Layout: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* 🚀 Multi-Navigational Floating Action Dock */}
-      <FloatingNavDock onOpenCommandPalette={() => setIsCommandPaletteOpen(true)} />
-
-      {/* ⚡ Multi-Navigational Universal Command Palette (Ctrl + K) */}
+      {/* ⚡ Universal Command Palette (Ctrl + K) */}
       <CommandPaletteModal 
         isOpen={isCommandPaletteOpen} 
         onClose={() => setIsCommandPaletteOpen(false)} 
