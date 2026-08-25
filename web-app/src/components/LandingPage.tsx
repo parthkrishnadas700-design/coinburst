@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { signInWithGoogle, signInWithEmail, signUpWithEmail } from '../shared/firebase';
+import { useFinanceStore } from '../shared/useFinanceStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Bot, TrendingUp, ShieldCheck, Palette, Smartphone, 
@@ -8,6 +10,7 @@ import {
 import { TermsModal } from './TermsModal';
 
 export const LandingPage: React.FC = () => {
+  const user = useFinanceStore(state => state.user);
   const [isSignUp, setIsSignUp] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [email, setEmail] = useState('');
@@ -97,6 +100,14 @@ export const LandingPage: React.FC = () => {
             <span className="font-['Manrope'] text-[9px] tracking-widest text-emerald-400 font-semibold uppercase">Wealth Hub</span>
           </div>
         </div>
+        {user && (
+          <Link
+            to="/home"
+            className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold flex items-center gap-2 transition-all no-underline shadow-lg shadow-emerald-500/20"
+          >
+            Go to Dashboard <ArrowRight className="w-4 h-4" />
+          </Link>
+        )}
       </header>
 
       {/* Main Hero & Auth Portal */}
@@ -358,7 +369,7 @@ export const LandingPage: React.FC = () => {
       {/* Footer */}
       <footer className="border-t border-white/5 py-6 px-6 relative z-10">
         <div className="max-w-7xl w-full mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-gray-500">
-          <p>© 2026 CoinBurst Wealth Hub. Powered by Firebase Realtime Database.</p>
+          <p>© 2026 CoinBurst Wealth Hub.</p>
           <div className="flex gap-6">
             <a 
               href="/terms"

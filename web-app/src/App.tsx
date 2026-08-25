@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { DashboardWeb } from './components/DashboardWeb';
 import { LandingPage } from './components/LandingPage';
 import { TermsPage } from './components/TermsPage';
@@ -24,7 +24,6 @@ function MainApp() {
   const setUser = useFinanceStore((state) => state.setUser);
   const user = useFinanceStore((state) => state.user);
   const theme = useFinanceStore((state) => state.theme);
-  const location = useLocation();
 
   // Gamification + Recurring Backend Boot
   const processRecurringTransactions = useFinanceStore(state => state.processRecurringTransactions);
@@ -78,11 +77,6 @@ function MainApp() {
     return () => unsubscribe();
   }, [setUser, processRecurringTransactions]);
 
-  // Always allow direct access to Terms & Privacy pages regardless of auth state
-  if (location.pathname === '/terms' || location.pathname === '/privacy') {
-    return <TermsPage />;
-  }
-
   if (!authReady) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-[#07050F]">
@@ -101,44 +95,51 @@ function MainApp() {
     );
   }
 
-  if (!user) {
-    return (
-      <>
-        <LandingPage />
-        <UpdatePromptModal />
-      </>
-    );
-  }
-
   return (
     <div className="w-full min-h-screen">
-      {showWelcome && (
+      {showWelcome && user && (
         <WelcomeScreen
           userName={user.displayName || user.email || 'Explorer'}
           onComplete={() => setShowWelcome(false)}
         />
       )}
       <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Dashboard />} />
-          {/* Map legacy routes back into DashboardWeb which acts as a sub-router container */}
-          <Route path="transactions" element={<DashboardWeb activePage="transactions" onNavigate={() => {}} onOpenForm={() => { setIsFormOpen(true); setEditingTx(null); }} onEditTransaction={(tx) => { setEditingTx(tx); setIsFormOpen(true); }} />} />
-          <Route path="budgets" element={<DashboardWeb activePage="budgets" onNavigate={() => {}} onOpenForm={() => {}} onEditTransaction={() => {}} />} />
-          <Route path="settings" element={<DashboardWeb activePage="settings" onNavigate={() => {}} onOpenForm={() => {}} onEditTransaction={() => {}} />} />
-          <Route path="ai" element={<DashboardWeb activePage="ai" onNavigate={() => {}} onOpenForm={() => {}} onEditTransaction={() => {}} />} />
-          <Route path="about" element={<DashboardWeb activePage="about" onNavigate={() => {}} onOpenForm={() => {}} onEditTransaction={() => {}} />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/privacy" element={<TermsPage />} />
+
+        {user ? (
+          <>
+            <Route path="/landing" element={<Navigate to="/home" replace />} />
+            <Route path="/" element={<Layout />}>
+              <Route index element={<Dashboard />} />
+              <Route path="home" element={<Dashboard />} />
+              <Route path="transactions" element={<DashboardWeb activePage="transactions" onNavigate={() => {}} onOpenForm={() => { setIsFormOpen(true); setEditingTx(null); }} onEditTransaction={(tx) => { setEditingTx(tx); setIsFormOpen(true); }} />} />
+              <Route path="budgets" element={<DashboardWeb activePage="budgets" onNavigate={() => {}} onOpenForm={() => {}} onEditTransaction={() => {}} />} />
+              <Route path="settings" element={<DashboardWeb activePage="settings" onNavigate={() => {}} onOpenForm={() => {}} onEditTransaction={() => {}} />} />
+              <Route path="ai" element={<DashboardWeb activePage="ai" onNavigate={() => {}} onOpenForm={() => {}} onEditTransaction={() => {}} />} />
+              <Route path="about" element={<DashboardWeb activePage="about" onNavigate={() => {}} onOpenForm={() => {}} onEditTransaction={() => {}} />} />
+              <Route path="*" element={<Navigate to="/home" replace />} />
+            </Route>
+          </>
+        ) : (
+          <>
+            <Route path="/landing" element={<LandingPage />} />
+            <Route path="/" element={<LandingPage />} />
+            <Route path="*" element={<Navigate to="/landing" replace />} />
+          </>
+        )}
       </Routes>
       
-      <AddTransactionWeb
-        isOpen={isFormOpen}
-        transactionToEdit={editingTx}
-        onClose={() => {
-          setIsFormOpen(false);
-          setEditingTx(null);
-        }}
-      />
+      {user && (
+        <AddTransactionWeb
+          isOpen={isFormOpen}
+          transactionToEdit={editingTx}
+          onClose={() => {
+            setIsFormOpen(false);
+            setEditingTx(null);
+          }}
+        />
+      )}
 
       <UpdatePromptModal />
     </div>

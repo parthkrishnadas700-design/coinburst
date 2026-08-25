@@ -148,7 +148,7 @@ export const TermsPage: React.FC = () => {
 
       {/* Footer */}
       <footer className="border-t border-white/10 py-6 px-6 text-center text-xs text-gray-500">
-        <p>© 2026 CoinBurst Wealth Hub. All rights reserved. Powered by Firebase Realtime Database.</p>
+        <p>© 2026 CoinBurst Wealth Hub. All rights reserved.</p>
       </footer>
     </div>
   );
