@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ShieldAlert, KeyRound, CheckCircle, X, Lock } from 'lucide-react';
 import { useFinanceStore } from '../shared/useFinanceStore';
 import { triggerHapticNotification, showNativeToast } from '../shared/nativeBridge';
+import { useScrollLock } from '../shared/useScrollLock';
 
 interface AdminPasscodeModalProps {
   isOpen: boolean;
@@ -10,6 +11,9 @@ interface AdminPasscodeModalProps {
 }
 
 export const AdminPasscodeModal: React.FC<AdminPasscodeModalProps> = ({ isOpen, onClose, onSuccess }) => {
+  // 🔒 Lock background scrolling completely when passcode modal is active
+  useScrollLock(isOpen);
+
   const [passcode, setPasscode] = useState('');
   const [error, setError] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');

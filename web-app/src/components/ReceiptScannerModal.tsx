@@ -3,6 +3,7 @@ import { Camera, Upload, Sparkles, CheckCircle2, X, DollarSign, Tag, Building2, 
 import { createWorker } from 'tesseract.js';
 import { useFinanceStore } from '../shared/useFinanceStore';
 import { triggerHapticNotification, showNativeToast } from '../shared/nativeBridge';
+import { useScrollLock } from '../shared/useScrollLock';
 
 interface ReceiptScannerModalProps {
   isOpen: boolean;
@@ -19,6 +20,9 @@ export interface ExtractedReceiptData {
 }
 
 export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({ isOpen, onClose }) => {
+  // 🔒 Lock background scrolling completely when modal is active
+  useScrollLock(isOpen);
+
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
   const [progressStatus, setProgressStatus] = useState('Initializing AI OCR Engine...');

@@ -230,3 +230,26 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   outline-offset: 2px;
 }
 
+/* ── Strict Scroll Isolation & Single-Layout Motion Rules ──────────────── */
+body.modal-open, html.modal-open {
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  touch-action: none !important;
+  overscroll-behavior: none !important;
+}
+
+body.modal-open main, 
+body.modal-open .main-content-pane {
+  pointer-events: none !important;
+  overflow: hidden !important;
+  user-select: none !important;
+}
+
+.modal-scroll-lock {
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y !important;
+}
+
+

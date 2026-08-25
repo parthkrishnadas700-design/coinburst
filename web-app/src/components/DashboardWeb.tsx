@@ -21,6 +21,7 @@ import { UserTelemetryPanel } from './UserTelemetryPanel';
 import { ReceiptScannerModal } from './ReceiptScannerModal';
 import { BurnRatePredictor } from './BurnRatePredictor';
 import { GroupBillSplitter } from './GroupBillSplitter';
+import { useScrollLock } from '../shared/useScrollLock';
 import { 
   requestNotificationPermissions, 
   scheduleDailyFinanceReminder, 
@@ -533,6 +534,9 @@ export const DashboardWeb: React.FC<{
   const [ledgerSortBy, setLedgerSortBy] = useState('date-newest');
 
   const [confirmDeleteBudgetId, setConfirmDeleteBudgetId] = useState<string | null>(null);
+
+  // 🔒 Lock background scrolling whenever any modal overlay is active
+  useScrollLock(showAddAccount || showAddBudget || showReceiptScanner || showTermsModal || !!confirmDeleteBudgetId);
 
   // AI Advisor Chat State
   const [chatHistory, setChatHistory] = useState<Array<{ sender: 'user' | 'ai'; text: string }>>([

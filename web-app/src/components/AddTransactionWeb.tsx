@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Tag, Calendar, Layers, AlertCircle } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
+import { useScrollLock } from '../shared/useScrollLock';
+
 export const AddTransactionWeb: React.FC<{
   onClose: () => void;
   isOpen: boolean;
@@ -16,6 +18,9 @@ export const AddTransactionWeb: React.FC<{
   const addTransaction = useFinanceStore((state) => state.addTransaction);
   const updateTransaction = useFinanceStore((state) => state.updateTransaction);
   const currency = useFinanceStore((state) => state.currency);
+
+  // 🔒 Lock background scrolling completely when modal is active
+  useScrollLock(isOpen);
 
   const currencyDef = SUPPORTED_CURRENCIES.find(c => c.code === currency) ?? SUPPORTED_CURRENCIES[0];
 

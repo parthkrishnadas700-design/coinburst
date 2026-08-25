@@ -9,6 +9,7 @@ import {
 import { useThemeStyles } from '../components/DashboardWeb'; // temporarily importing styles
 
 import { AdminBroadcastBanner } from '../components/AdminBroadcastBanner';
+import { useScrollLock } from '../shared/useScrollLock';
 
 export const Layout: React.FC = () => {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -23,16 +24,8 @@ export const Layout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Lock body scroll when mobile sidebar slide drawer is open
-  React.useEffect(() => {
-    if (isMobileSidebarOpen) {
-      const originalStyle = window.getComputedStyle(document.body).overflow;
-      document.body.style.overflow = 'hidden';
-      return () => {
-        document.body.style.overflow = originalStyle === 'hidden' ? '' : originalStyle;
-      };
-    }
-  }, [isMobileSidebarOpen]);
+  // 🔒 Lock background scrolling completely when mobile sidebar is open
+  useScrollLock(isMobileSidebarOpen);
 
   const handleSidebarSync = async () => {
     if (syncWithFirebase) {
