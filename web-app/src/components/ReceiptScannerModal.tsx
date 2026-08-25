@@ -116,7 +116,12 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({ isOpen
   };
 
   const parseReceiptText = (text: string): ExtractedReceiptData => {
-    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+    // Normalize OCR text: fix spaces around dots/commas (e.g. "238 . 78" or "238 , 78" -> "238.78")
+    const normalizedText = text
+      .replace(/([0-9]+)\s*[\.,·•:\s]\s*([0-9]{2})\b/g, '$1.$2')
+      .replace(/([0-9]+),([0-9]{2})\b/g, '$1.$2');
+
+    const lines = normalizedText.split('\n').map(l => l.trim()).filter(Boolean);
     let merchant = 'Merchant Store';
     let amount = 0;
     let category = 'Shopping';
@@ -134,29 +139,36 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({ isOpen
       }
     }
 
-    // 2. Amount Extraction via Regex
-    // Look for Total / Grand Total / Net Amount lines first
-    const totalRegex = /(?:total|grand\s*total|net\s*amount|amount\s*due|payable|subtotal|rs\.?|inr|₹)\s*[:\-\=]?\s*(?:rs\.?|inr|₹)?\s*([0-9]+(?:[.,][0-9]{1,2})?)/gi;
+    // 2. Amount Extraction via Regex (preserves 2 decimals e.g. 238.78)
+    const totalRegex = /(?:total|grand\s*total|net\s*amount|amount\s*due|payable|subtotal|rs\.?|inr|₹|\$)\s*[:\-\=]?\s*(?:rs\.?|inr|₹|\$)?\s*([0-9]+(?:\.[0-9]{1,2})?)/gi;
     let totalMatches: number[] = [];
     let match;
 
-    while ((match = totalRegex.exec(text)) !== null) {
-      const valStr = match[1].replace(/,/g, '');
-      const val = parseFloat(valStr);
+    while ((match = totalRegex.exec(normalizedText)) !== null) {
+      const valStr = match[1];
+      let val = parseFloat(valStr);
+
+      // If OCR missed dot turning 238.78 into 23878 (no decimal in string and over 1000)
+      if (!valStr.includes('.') && val > 1000 && Number.isInteger(val)) {
+        const candidate = val / 100;
+        if (candidate < 10000) {
+          val = candidate;
+        }
+      }
+
       if (!isNaN(val) && val > 0 && val < 500000) {
         totalMatches.push(val);
       }
     }
 
     if (totalMatches.length > 0) {
-      // Pick the max match from Total lines
       amount = Math.max(...totalMatches);
     } else {
-      // Fallback: search for all currency numbers in the text and take the largest realistic number
-      const anyNumberRegex = /(?:rs\.?|inr|₹|\$)?\s*([0-9]+\.[0-9]{2})/gi;
+      // Fallback: search for all numbers with 2 decimals e.g. 238.78
+      const decimalNumberRegex = /(?:rs\.?|inr|₹|\$)?\s*([0-9]+\.[0-9]{2})/gi;
       let numbers: number[] = [];
       let numMatch;
-      while ((numMatch = anyNumberRegex.exec(text)) !== null) {
+      while ((numMatch = decimalNumberRegex.exec(normalizedText)) !== null) {
         const val = parseFloat(numMatch[1]);
         if (!isNaN(val) && val > 0 && val < 500000) {
           numbers.push(val);

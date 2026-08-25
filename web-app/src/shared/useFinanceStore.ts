@@ -4,7 +4,7 @@ import { database } from './firebase';
 import { ref, set as firebaseSet, get as firebaseGet, update as firebaseUpdate, onValue } from 'firebase/database';
 import { triggerHaptic, triggerHapticNotification, showNativeToast } from './nativeBridge';
 import { sanitizeText, validateAmount, sanitizeCategory } from './securityUtils';
-import { notifyBudgetAlert, notifyHighExpense } from './nativeNotifications';
+import { notifyBudgetAlert, notifyHighExpense, sendLocalNotification } from './nativeNotifications';
 
 export type ThemeType = 'dark' | 'light' | 'cyberpunk' | 'glass' | 'forest' | 'synthwave';
 
@@ -299,10 +299,18 @@ export const useFinanceStore = create<FinanceState>()(
         set({ transactions: updatedTransactions, accounts: updatedAccounts, budgets: updatedBudgets });
         triggerHaptic('medium');
         triggerHapticNotification('success');
-        showNativeToast('Transaction saved');
 
-        // 🔔 Trigger Local Notifications formatted with Active Currency Symbol ($ / ₹ / € / etc)
-        if (sanitizedTx.type === 'expense') {
+        // 🔔 Send immediate Local Message Notification for every transaction entry!
+        if (sanitizedTx.type === 'income') {
+          sendLocalNotification({
+            title: '✅ Income Logged!',
+            body: `${currDef.symbol} ${sanitizedTx.amount.toLocaleString()} credited (${sanitizedTx.description || sanitizedTx.category})`
+          });
+        } else {
+          sendLocalNotification({
+            title: '💸 Expense Logged!',
+            body: `${currDef.symbol} ${sanitizedTx.amount.toLocaleString()} spent on ${sanitizedTx.category} (${sanitizedTx.description || 'Expense'})`
+          });
           notifyHighExpense(sanitizedTx.description, sanitizedTx.amount, currDef.symbol);
           const targetBudget = updatedBudgets.find(
             (b) => b.category.toLowerCase() === sanitizedTx.category.toLowerCase()
@@ -323,6 +331,7 @@ export const useFinanceStore = create<FinanceState>()(
         const txToDelete = transactions.find((t) => t.id === id);
         if (!txToDelete) return;
 
+        const currDef = SUPPORTED_CURRENCIES.find((c) => c.code === currency) ?? SUPPORTED_CURRENCIES[0];
         const amountChange = txToDelete.type === 'income' ? -txToDelete.amount : txToDelete.amount;
 
         const updatedAccounts = accounts.map((acc) =>
@@ -336,7 +345,11 @@ export const useFinanceStore = create<FinanceState>()(
 
         set({ transactions: updatedTransactions, accounts: updatedAccounts, budgets: updatedBudgets });
         triggerHaptic('heavy');
-        showNativeToast('Transaction deleted');
+        
+        sendLocalNotification({
+          title: '🗑️ Transaction Removed',
+          body: `Removed ${txToDelete.description || txToDelete.category} (${currDef.symbol} ${txToDelete.amount.toLocaleString()})`
+        });
 
         const { user } = get();
         if (user) saveStateToFirebase(user.uid, updatedAccounts, updatedTransactions, updatedBudgets, theme, currency);

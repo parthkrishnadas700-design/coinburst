@@ -5,6 +5,7 @@ import { ref, onValue, set as firebaseSet } from 'firebase/database';
 import { useFinanceStore } from '../shared/useFinanceStore';
 import { useThemeStyles } from './DashboardWeb';
 import { triggerHapticNotification, showNativeToast } from '../shared/nativeBridge';
+import { sendLocalNotification } from '../shared/nativeNotifications';
 
 export interface SplitMember {
   id: string;
@@ -75,7 +76,11 @@ export const GroupBillSplitter: React.FC = () => {
             members: currentMembers,
             updatedAt: new Date().toISOString()
           }).catch(() => {});
-          showNativeToast(`You (${myName}) were automatically added to Group ${groupCode}!`);
+          
+          sendLocalNotification({
+            title: '👥 Auto-Joined Group!',
+            body: `You (${myName}) joined Group Code ${groupCode}`
+          });
         }
 
         setMembers(currentMembers);
@@ -124,7 +129,10 @@ export const GroupBillSplitter: React.FC = () => {
     setMembers(initialMembers);
     syncToCloud('New Group Event 🎉', settlementNotes, initialMembers);
     triggerHapticNotification('success');
-    showNativeToast(`Created Group Code: ${freshCode}`);
+    sendLocalNotification({
+      title: '🔑 New Group Code Created!',
+      body: `Group Code: ${freshCode}`
+    });
   };
 
   const handleJoinByCode = (e: React.FormEvent) => {
@@ -136,7 +144,10 @@ export const GroupBillSplitter: React.FC = () => {
     setGroupCode(targetCode);
     setJoinCodeInput('');
     triggerHapticNotification('success');
-    showNativeToast(`Switched to Group Code: ${targetCode}`);
+    sendLocalNotification({
+      title: '🔑 Joined Group Code',
+      body: `Switched active group to ${targetCode}`
+    });
   };
 
   const handleTitleChange = (val: string) => {
@@ -151,9 +162,17 @@ export const GroupBillSplitter: React.FC = () => {
 
   const handleMemberAmountChange = (memberId: string, newAmountStr: string) => {
     const val = parseFloat(newAmountStr) || 0;
+    const targetMember = members.find(m => m.id === memberId);
     const updated = members.map(m => m.id === memberId ? { ...m, paidAmount: val } : m);
     setMembers(updated);
     syncToCloud(groupTitle, settlementNotes, updated);
+
+    if (targetMember) {
+      sendLocalNotification({
+        title: '👥 Group Payment Updated',
+        body: `${targetMember.name}: ${currency} ${val.toLocaleString()} recorded for ${groupCode}`
+      });
+    }
   };
 
   const handleAddManualMember = (e: React.FormEvent) => {
@@ -172,6 +191,11 @@ export const GroupBillSplitter: React.FC = () => {
     setNewPaidAmount('');
     syncToCloud(groupTitle, settlementNotes, updated);
     triggerHapticNotification('success');
+
+    sendLocalNotification({
+      title: '👥 Friend Added to Group',
+      body: `Added ${newMember.name} (Paid ${currency} ${newMember.paidAmount}) to ${groupCode}`
+    });
   };
 
   const handleRemoveMember = (id: string) => {
