@@ -484,6 +484,7 @@ export const DashboardWeb: React.FC<{
 
   const customNotificationTime = useFinanceStore((state) => state.customNotificationTime) || '20:00';
   const notificationIntervalHours = useFinanceStore((state) => state.notificationIntervalHours) || 1;
+  const isAdminUnlocked = useFinanceStore((state) => state.isAdminUnlocked);
   const setCustomNotificationTime = useFinanceStore((state) => state.setCustomNotificationTime);
   const setNotificationIntervalHours = useFinanceStore((state) => state.setNotificationIntervalHours);
 
@@ -1364,8 +1365,8 @@ export const DashboardWeb: React.FC<{
 
             {activePage === 'settings' && (
               <div className="space-y-8">
-                {/* 👑 Admin User Telemetry Panel */}
-                <UserTelemetryPanel />
+                {/* 👑 Admin User Telemetry Panel (Only visible when unlocked via secret 5-tap passcode) */}
+                {isAdminUnlocked && <UserTelemetryPanel />}
 
                 {/* 0. Wallet Nodes & Accounts Panel */}
                 <div className={`p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow}`}>

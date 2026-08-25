@@ -128,6 +128,13 @@ export const UserTelemetryPanel: React.FC = () => {
               className={`w-full pl-9 pr-4 py-2 rounded-xl text-xs font-bold border border-gray-700 ${cStyles.input} focus:outline-none focus:border-purple-400`}
             />
           </div>
+          <button
+            onClick={() => useFinanceStore.getState().setIsAdminUnlocked(false)}
+            className="px-3 py-2 rounded-xl bg-red-500/10 text-red-400 border border-red-500/30 text-xs font-bold flex items-center gap-1.5 hover:bg-red-500/20 transition-colors cursor-pointer shrink-0"
+            title="Hide & Lock Admin Telemetry Console"
+          >
+            🔒 Lock Console
+          </button>
         </div>
       </div>
 

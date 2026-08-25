@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Code, 
@@ -6,6 +7,7 @@ import {
   CheckCircle2, Sparkles, BookOpen, ExternalLink, Globe, PlayCircle
 } from 'lucide-react';
 import { useThemeStyles } from './DashboardWeb';
+import { AdminPasscodeModal } from './AdminPasscodeModal';
 
 export type VideoGuideItem = {
   id: number;
@@ -20,6 +22,24 @@ export type VideoGuideItem = {
 
 export const AboutWeb: React.FC = () => {
   const cStyles = useThemeStyles();
+  const navigate = useNavigate();
+  const [tapCount, setTapCount] = useState(0);
+  const [showAdminModal, setShowAdminModal] = useState(false);
+
+  const handleLogoTap = () => {
+    setTapCount((prev) => {
+      const next = prev + 1;
+      if (next >= 5) {
+        setShowAdminModal(true);
+        return 0;
+      }
+      return next;
+    });
+
+    setTimeout(() => {
+      setTapCount(0);
+    }, 3000);
+  };
 
   // 5 primary tutorial step guides
   const videoTutorials: VideoGuideItem[] = [
@@ -107,18 +127,33 @@ export const AboutWeb: React.FC = () => {
       transition={{ duration: 0.5 }}
       className="space-y-8 max-w-5xl mx-auto pb-12"
     >
+      <AdminPasscodeModal
+        isOpen={showAdminModal}
+        onClose={() => setShowAdminModal(false)}
+        onSuccess={() => navigate('/settings')}
+      />
+
       {/* Hero Header */}
       <div className={`p-8 rounded-3xl ${cStyles.cardBg} ${cStyles.shadow} relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 border border-emerald-500/20`}>
         <div className="absolute top-0 right-0 w-80 h-80 bg-[#00FF88]/5 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-80 h-80 bg-[#FF007F]/5 rounded-full blur-3xl pointer-events-none" />
 
         <div className="flex items-center gap-5 relative z-10">
-          <div className="shrink-0 w-20 h-20 rounded-2xl bg-gradient-to-tr from-[#FF007F] via-[#00FF88] to-[#00E5FF] p-[3px] shadow-lg">
-            <div className="w-full h-full bg-[#0B0B0F] rounded-2xl flex items-center justify-center">
+          <div 
+            onClick={handleLogoTap}
+            className="shrink-0 w-20 h-20 rounded-2xl bg-gradient-to-tr from-[#FF007F] via-[#00FF88] to-[#00E5FF] p-[3px] shadow-lg cursor-pointer hover:scale-105 active:scale-95 transition-transform"
+            title="CoinBurst Feature Guides (Tap 5x for Secret Admin Console)"
+          >
+            <div className="w-full h-full bg-[#0B0B0F] rounded-2xl flex items-center justify-center relative">
               <BookOpen className="w-10 h-10 text-emerald-400 animate-pulse" />
+              {tapCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-purple-600 text-white text-[10px] font-black flex items-center justify-center animate-ping">
+                  {tapCount}
+                </span>
+              )}
             </div>
           </div>
-          <div>
+          <div onClick={handleLogoTap} className="cursor-pointer">
             <span className="text-[10px] uppercase font-black tracking-widest text-emerald-400 flex items-center gap-1">
               <Sparkles className="w-3 h-3" /> Application Interactive Guide
             </span>

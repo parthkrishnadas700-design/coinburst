@@ -96,7 +96,9 @@ interface FinanceState {
   customNotificationTime: string;
   lowBalanceThreshold: number;
   notificationIntervalHours: number;
+  isAdminUnlocked: boolean;
 
+  setIsAdminUnlocked: (unlocked: boolean) => void;
   setCustomNotificationTime: (time: string) => void;
   setLowBalanceThreshold: (threshold: number) => void;
   setNotificationIntervalHours: (hours: number) => void;
@@ -250,7 +252,9 @@ export const useFinanceStore = create<FinanceState>()(
       customNotificationTime: '20:00',
       lowBalanceThreshold: 1000,
       notificationIntervalHours: 1, // Default interval = Every 1 Hour
+      isAdminUnlocked: false,
 
+      setIsAdminUnlocked: (isAdminUnlocked) => set({ isAdminUnlocked }),
       setCustomNotificationTime: (customNotificationTime) => set({ customNotificationTime }),
       setLowBalanceThreshold: (lowBalanceThreshold) => set({ lowBalanceThreshold }),
       setNotificationIntervalHours: (notificationIntervalHours) => set({ notificationIntervalHours }),
