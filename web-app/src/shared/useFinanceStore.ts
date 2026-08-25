@@ -4,7 +4,7 @@ import { database } from './firebase';
 import { ref, set as firebaseSet, get as firebaseGet, update as firebaseUpdate, onValue } from 'firebase/database';
 import { triggerHaptic, triggerHapticNotification, showNativeToast } from './nativeBridge';
 import { sanitizeText, validateAmount, sanitizeCategory } from './securityUtils';
-import { notifyBudgetAlert, notifyHighExpense, notifyLowBalance } from './nativeNotifications';
+import { notifyBudgetAlert, notifyHighExpense } from './nativeNotifications';
 
 export type ThemeType = 'dark' | 'light' | 'cyberpunk' | 'glass' | 'forest' | 'synthwave';
 
@@ -285,13 +285,6 @@ export const useFinanceStore = create<FinanceState>()(
           if (targetBudget && targetBudget.limit > 0) {
             notifyBudgetAlert(targetBudget.category, targetBudget.spent, targetBudget.limit, currDef.symbol);
           }
-        }
-
-        // 🚨 Trigger Low Money / Low Balance Warning if funds drop below threshold
-        const totalBalance = updatedAccounts.reduce((sum, a) => sum + a.balance, 0);
-        const { lowBalanceThreshold: threshold } = get();
-        if (totalBalance < (threshold ?? 1000)) {
-          notifyLowBalance(totalBalance, threshold ?? 1000, currDef.symbol);
         }
 
         const { user } = get();
