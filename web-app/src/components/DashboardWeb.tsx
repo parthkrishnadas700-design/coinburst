@@ -9,7 +9,7 @@ import {
 import { 
   Plus, Trash2, ArrowUpRight, ArrowDownRight, Search, ChevronDown, 
   TrendingUp, PiggyBank, Bot, Download, Sparkles, Pencil,
-  Upload, Database, RefreshCw, Bell, Clock, ShieldCheck, AlertTriangle
+  Upload, Database, RefreshCw, Bell, Clock, ShieldCheck
 } from 'lucide-react';
 import { generateAIResponse } from '../utils/aiCommandEngine';
 import { AboutWeb } from './AboutWeb';
@@ -17,13 +17,11 @@ import { CalendarChartColumn } from './CalendarChartColumn';
 import { WalletSlidebar } from './WalletSlidebar';
 import { TermsModal } from './TermsModal';
 import { ProfitLossWidget } from './ProfitLossWidget';
-import { triggerAppUpdateModal } from './UpdatePromptModal';
 import { 
   requestNotificationPermissions, 
   scheduleDailyFinanceReminder, 
   scheduleIntervalFinanceReminder,
-  checkNotificationPermissions, 
-  notifyLowBalance
+  checkNotificationPermissions
 } from '../shared/nativeNotifications';
 
 // --- Theme Helper Hooks ---
@@ -484,10 +482,8 @@ export const DashboardWeb: React.FC<{
   const loading = useFinanceStore((state) => state.loading);
 
   const customNotificationTime = useFinanceStore((state) => state.customNotificationTime) || '20:00';
-  const lowBalanceThreshold = useFinanceStore((state) => state.lowBalanceThreshold) ?? 1000;
   const notificationIntervalHours = useFinanceStore((state) => state.notificationIntervalHours) || 1;
   const setCustomNotificationTime = useFinanceStore((state) => state.setCustomNotificationTime);
-  const setLowBalanceThreshold = useFinanceStore((state) => state.setLowBalanceThreshold);
   const setNotificationIntervalHours = useFinanceStore((state) => state.setNotificationIntervalHours);
 
   const [backupMessage, setBackupMessage] = useState('');
@@ -1679,7 +1675,7 @@ export const DashboardWeb: React.FC<{
                       </div>
                       <div>
                         <h3 className="text-lg font-black tracking-wide">Local Notifications & Financial Alerts</h3>
-                        <p className="text-xs text-gray-400">Configure recurring timers, custom notification times, low money alerts in active currency, and custom audio sound effects.</p>
+                        <p className="text-xs text-gray-400">Configure recurring timers, custom notification times, and custom audio sound effects.</p>
                       </div>
                     </div>
                     <button
@@ -1698,7 +1694,7 @@ export const DashboardWeb: React.FC<{
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* 🕒 Card 1: Custom Scheduled Time Notification */}
                     <div className={`p-5 rounded-xl border border-gray-800/60 ${cStyles.ledgerFeedBg} flex flex-col justify-between space-y-4`}>
                       <div>
@@ -1781,53 +1777,6 @@ export const DashboardWeb: React.FC<{
                       >
                         <RefreshCw className="w-4 h-4" /> Activate Interval Timer
                       </button>
-                    </div>
-
-                    {/* 🚨 Card 3: Low Money / Low Balance Warning */}
-                    <div className={`p-5 rounded-xl border border-gray-800/60 ${cStyles.ledgerFeedBg} flex flex-col justify-between space-y-4`}>
-                      <div>
-                        <div className="flex items-center gap-2 font-bold text-sm text-gray-200 mb-1">
-                          <AlertTriangle className="w-4 h-4 text-amber-400" /> Low Money Alert ({currency})
-                        </div>
-                        <p className="text-xs text-gray-400 mb-3">Sends alerts using your active currency symbol ({fmt(100).slice(0, 1)}).</p>
-                        
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-bold tracking-widest text-gray-400 uppercase block">
-                            Minimum Funds Threshold
-                          </label>
-                          <input
-                            type="number"
-                            value={lowBalanceThreshold}
-                            onChange={(e) => {
-                              const val = parseFloat(e.target.value) || 0;
-                              setLowBalanceThreshold(val);
-                            }}
-                            placeholder="1000"
-                            className={`w-full p-2.5 rounded-xl text-sm font-bold border border-gray-700 ${cStyles.input} text-white focus:outline-none focus:border-amber-400 transition-colors`}
-                          />
-                          <p className="text-[10px] text-amber-400 font-medium">
-                            Alerts if balance drops below {fmt(lowBalanceThreshold)}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <button
-                          onClick={async () => {
-                            const def = SUPPORTED_CURRENCIES.find(c => c.code === currency) ?? SUPPORTED_CURRENCIES[0];
-                            await notifyLowBalance(lowBalanceThreshold * 0.8, lowBalanceThreshold, def.symbol);
-                          }}
-                          className="w-full py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border border-amber-500/40 text-amber-400 hover:bg-amber-500/10 cursor-pointer transition-colors"
-                        >
-                          <AlertTriangle className="w-4 h-4" /> Test Low Money Alert
-                        </button>
-                        <button
-                          onClick={() => triggerAppUpdateModal('Version 2.5.0 build patch available')}
-                          className="w-full py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 cursor-pointer transition-colors"
-                        >
-                          <RefreshCw className="w-4 h-4" /> Trigger App Update Popup
-                        </button>
-                      </div>
                     </div>
                   </div>
 
