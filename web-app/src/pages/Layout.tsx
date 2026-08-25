@@ -12,6 +12,8 @@ import { AdminBroadcastBanner } from '../components/AdminBroadcastBanner';
 import { useScrollLock } from '../shared/useScrollLock';
 import { CommandPaletteModal } from '../components/CommandPaletteModal';
 import { ExitConfirmationModal } from '../components/ExitConfirmationModal';
+import { App as CapacitorApp } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 
 export const Layout: React.FC = () => {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -32,20 +34,65 @@ export const Layout: React.FC = () => {
   // 🔒 Lock background scrolling completely when mobile sidebar is open
   useScrollLock(isMobileSidebarOpen);
 
-  // 🚪 Intercept back gesture on root page to show Exit Confirmation Modal
+  // 🚪 Complete Device Back Gesture & Back Button Interceptor
   React.useEffect(() => {
-    if (location.pathname === '/home' || location.pathname === '/') {
-      window.history.pushState({ isRoot: true }, '');
+    // 1. Native Capacitor Android Hardware / Edge Back Button Listener
+    let nativeListener: any = null;
+    if (Capacitor.isNativePlatform()) {
+      CapacitorApp.addListener('backButton', () => {
+        if (isMobileSidebarOpen) {
+          setIsMobileSidebarOpen(false);
+        } else if (isCommandPaletteOpen) {
+          setIsCommandPaletteOpen(false);
+        } else if (showLogoutModal) {
+          setShowLogoutModal(false);
+        } else if (showExitModal) {
+          setShowExitModal(false);
+        } else if (location.pathname === '/home' || location.pathname === '/') {
+          setShowExitModal(true);
+        } else {
+          navigate(-1);
+        }
+      }).then((handle) => {
+        nativeListener = handle;
+      });
+    }
+
+    // 2. Web & PWA Slide-Back Gesture (popstate) Interceptor
+    const isRoot = location.pathname === '/home' || location.pathname === '/';
+    if (isRoot) {
+      if (window.history.state?.guard !== 'coinburst_root') {
+        window.history.pushState({ guard: 'coinburst_root' }, '');
+      }
 
       const handlePopState = () => {
-        setShowExitModal(true);
-        window.history.pushState({ isRoot: true }, '');
+        if (isMobileSidebarOpen) {
+          setIsMobileSidebarOpen(false);
+          window.history.pushState({ guard: 'coinburst_root' }, '');
+        } else if (isCommandPaletteOpen) {
+          setIsCommandPaletteOpen(false);
+          window.history.pushState({ guard: 'coinburst_root' }, '');
+        } else if (showLogoutModal) {
+          setShowLogoutModal(false);
+          window.history.pushState({ guard: 'coinburst_root' }, '');
+        } else {
+          // Trigger Exit Confirmation Popup on Root Page Slide Back Gesture!
+          setShowExitModal(true);
+          window.history.pushState({ guard: 'coinburst_root' }, '');
+        }
       };
 
       window.addEventListener('popstate', handlePopState);
-      return () => window.removeEventListener('popstate', handlePopState);
+      return () => {
+        window.removeEventListener('popstate', handlePopState);
+        if (nativeListener?.remove) nativeListener.remove();
+      };
+    } else {
+      return () => {
+        if (nativeListener?.remove) nativeListener.remove();
+      };
     }
-  }, [location.pathname]);
+  }, [location.pathname, isMobileSidebarOpen, isCommandPaletteOpen, showLogoutModal, showExitModal, navigate]);
 
   // ⚡ Global Keyboard Shortcut Listener (Ctrl + K / Cmd + K to open Command Palette)
   React.useEffect(() => {
