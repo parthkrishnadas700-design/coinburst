@@ -68,7 +68,7 @@ export const UpdatePromptModal: React.FC = () => {
             if (hasNewVer || hasNewTime) {
               console.log('[AutoUpdate] Ultra-fast deployment update detected:', data.version, data.buildTime);
               setShowModal(true);
-              setUpdateReason(`Build v${data.version} (Code ${data.versionCode || 24}) deployed`);
+              setUpdateReason(`Build v${data.version} (Code ${data.versionCode || 25}) deployed`);
               sendLocalNotification({
                 id: 99992,
                 title: `🚀 CoinBurst v${data.version} Update!`,
