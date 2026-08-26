@@ -3,6 +3,8 @@ import { useRegisterSW } from 'virtual:pwa-register/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RefreshCw, Sparkles, ShieldCheck, X } from 'lucide-react';
 import { sendLocalNotification } from '../shared/nativeNotifications';
+import { database } from '../shared/firebase';
+import { ref, onValue } from 'firebase/database';
 
 // Global helper to trigger update popup manually or via events
 export const triggerAppUpdateModal = (reason = 'New version update available') => {
@@ -32,7 +34,7 @@ export const UpdatePromptModal: React.FC = () => {
     },
   });
 
-  // Listen to custom update triggers & periodic build polling
+  // Listen to custom update triggers, build-meta polling, and Firebase Realtime version sentinel
   useEffect(() => {
     const handleCustomTrigger = (e: Event) => {
       const customEvt = e as CustomEvent;
@@ -42,29 +44,69 @@ export const UpdatePromptModal: React.FC = () => {
 
     window.addEventListener('coinburst-trigger-update', handleCustomTrigger);
 
-    // Initial check on mount
+    // Build Metadata Checker function
     const checkBuildMeta = async () => {
       try {
         const res = await fetch(`/build-meta.json?t=${Date.now()}`, { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
           const lastVersion = localStorage.getItem('coinburst_installed_ver');
-          if (data.version && lastVersion && data.version !== lastVersion) {
-            setShowModal(true);
-            setUpdateReason(`Build v${data.version} released`);
-          } else if (data.version) {
-            localStorage.setItem('coinburst_installed_ver', data.version);
+          const lastBuildTime = localStorage.getItem('coinburst_installed_build_time');
+
+          if (data.version) {
+            const hasNewVer = lastVersion && data.version !== lastVersion;
+            const hasNewTime = lastBuildTime && data.buildTime && Number(data.buildTime) > Number(lastBuildTime);
+
+            if (hasNewVer || hasNewTime) {
+              console.log('[AutoUpdate] New deployment detected:', data.version, data.buildTime);
+              setShowModal(true);
+              setUpdateReason(`Build v${data.version} (Code ${data.versionCode || 23}) deployed`);
+              sendLocalNotification({
+                id: 99992,
+                title: `🚀 CoinBurst v${data.version} Update!`,
+                body: 'A new update was deployed. Restart the app now to apply.',
+              });
+            } else {
+              localStorage.setItem('coinburst_installed_ver', data.version);
+              if (data.buildTime) {
+                localStorage.setItem('coinburst_installed_build_time', String(data.buildTime));
+              }
+            }
           }
         }
-      } catch {}
+      } catch (err) {
+        console.warn('[AutoUpdate] Build meta fetch error:', err);
+      }
     };
 
+    // Run check on mount
     checkBuildMeta();
+
+    // Poll build-meta.json every 15 seconds
+    const interval = setInterval(checkBuildMeta, 15000);
     window.addEventListener('focus', checkBuildMeta);
+
+    // Firebase Realtime Database Version Sentinel
+    const remoteVersionRef = ref(database, 'app_config/version');
+    const unsubscribeFirebase = onValue(remoteVersionRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const remoteData = snapshot.val();
+        const remoteVer = typeof remoteData === 'string' ? remoteData : remoteData?.version;
+        const lastVersion = localStorage.getItem('coinburst_installed_ver');
+
+        if (remoteVer && lastVersion && remoteVer !== lastVersion) {
+          console.log('[FirebaseAutoUpdate] Live remote update broadcast received:', remoteVer);
+          setShowModal(true);
+          setUpdateReason(`Remote Release v${remoteVer} active`);
+        }
+      }
+    });
 
     return () => {
       window.removeEventListener('coinburst-trigger-update', handleCustomTrigger);
       window.removeEventListener('focus', checkBuildMeta);
+      clearInterval(interval);
+      unsubscribeFirebase();
     };
   }, []);
 
@@ -74,7 +116,13 @@ export const UpdatePromptModal: React.FC = () => {
         await updateServiceWorker(true);
       }
     } catch {}
-    // Hard refresh to reload application and clear stale cache
+    // Clear cache & hard reload application
+    if ('caches' in window) {
+      try {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+      } catch {}
+    }
     window.location.reload();
   };
 
@@ -113,7 +161,7 @@ export const UpdatePromptModal: React.FC = () => {
             </div>
             <div>
               <span className="text-[9px] font-mono tracking-widest text-emerald-400 font-bold uppercase block">
-                Update Sentinel Active
+                Auto Update Sentinel Active
               </span>
               <h3 className="text-lg font-black font-['Poppins'] tracking-wide">
                 Restart App to Apply Update
@@ -130,7 +178,7 @@ export const UpdatePromptModal: React.FC = () => {
           <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 space-y-1.5 mb-6 text-[11px] text-emerald-300">
             <div className="flex items-center gap-2 font-semibold">
               <Sparkles className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span>Includes Instant Web Sync & Real-Time P&L Widget</span>
+              <span>Includes Savings & Crazy Spenders Badges System</span>
             </div>
             <div className="flex items-center gap-2 font-semibold text-cyan-300">
               <ShieldCheck className="w-3.5 h-3.5 text-cyan-400 shrink-0" />

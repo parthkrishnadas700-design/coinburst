@@ -127,14 +127,48 @@ export const TermsPage: React.FC = () => {
           </div>
         </section>
 
-        {/* Section 4: Contact & Legal Verification Links */}
+        {/* Section 4: Account & Data Deletion Request */}
+        <section id="delete-account" className="space-y-4 p-6 rounded-2xl bg-red-950/20 border border-red-500/30">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <h3 className="text-xl font-bold font-['Poppins'] text-red-400">4. Account & Data Deletion Request</h3>
+          </div>
+          <div className="space-y-3 text-xs text-gray-300 leading-relaxed">
+            <p>
+              In compliance with Google Play Data Safety policies, users have full right to request the permanent deletion of their account and all associated personal and financial data stored on CoinBurst servers.
+            </p>
+            <p>
+              <strong>Data Deleted Upon Request:</strong>
+            </p>
+            <ul className="list-disc list-inside space-y-1 text-gray-400 pl-2">
+              <li>User Account & Profile (Email address, User ID, Display Name, Profile Photo)</li>
+              <li>Transaction Logs (Income, Expenses, Category History)</li>
+              <li>Budget Targets, Burn-Rate Preferences & Group Bill Splits</li>
+            </ul>
+            <p className="pt-2">
+              <strong>How to Request Account & Data Deletion:</strong>
+            </p>
+            <ol className="list-decimal list-inside space-y-1.5 text-gray-300 font-semibold pl-2">
+              <li>In the CoinBurst app, navigate to <strong>Settings</strong> ➔ <strong>Account & Security</strong> ➔ click <strong>Delete Account & Data</strong>.</li>
+              <li>Alternatively, send an email to <a href="mailto:support@coinburst-5bdc5.web.app" className="text-red-400 underline">support@coinburst-5bdc5.web.app</a> or <a href="mailto:parthkrishnadas700@gmail.com" className="text-red-400 underline">parthkrishnadas700@gmail.com</a> with the subject line <em>"Account Deletion Request"</em> including your registered email address.</li>
+            </ol>
+            <p className="text-[11px] text-gray-400 pt-1">
+              Deletion requests are processed automatically within 24-48 hours. Once processed, all database nodes linked to your User ID are permanently purged.
+            </p>
+          </div>
+        </section>
+
+        {/* Section 5: Contact & Legal Verification Links */}
         <section className="p-6 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-cyan-500/10 to-transparent border border-emerald-500/30 flex flex-col sm:flex-row justify-between items-center gap-4">
           <div>
             <h4 className="font-bold text-sm text-white">Google Verification & Compliance URLs</h4>
-            <p className="text-xs text-gray-400 mt-0.5">Use these URLs for Google OAuth Consent Screen submission:</p>
+            <p className="text-xs text-gray-400 mt-0.5">Use these URLs for Google Play Console submission:</p>
             <div className="mt-2 space-y-1 font-mono text-xs">
               <p className="text-emerald-400 font-semibold">Terms of Service URL: <span className="text-white bg-black/40 px-2 py-0.5 rounded">/terms</span></p>
               <p className="text-cyan-400 font-semibold">Privacy Policy URL: <span className="text-white bg-black/40 px-2 py-0.5 rounded">/privacy</span></p>
+              <p className="text-red-400 font-semibold">Account Deletion URL: <span className="text-white bg-black/40 px-2 py-0.5 rounded">/delete-account</span></p>
             </div>
           </div>
           <a

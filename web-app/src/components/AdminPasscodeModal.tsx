@@ -11,14 +11,12 @@ interface AdminPasscodeModalProps {
 }
 
 export const AdminPasscodeModal: React.FC<AdminPasscodeModalProps> = ({ isOpen, onClose, onSuccess }) => {
-  // 🔒 Lock background scrolling completely when passcode modal is active
   useScrollLock(isOpen);
 
   const [passcode, setPasscode] = useState('');
   const [error, setError] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [success, setSuccess] = useState(false);
-  const currentUser = useFinanceStore(state => state.user);
   const setIsAdminUnlocked = useFinanceStore(state => state.setIsAdminUnlocked);
 
   if (!isOpen) return null;
@@ -26,16 +24,8 @@ export const AdminPasscodeModal: React.FC<AdminPasscodeModalProps> = ({ isOpen, 
   const handleUnlock = (e: React.FormEvent) => {
     e.preventDefault();
     const clean = passcode.trim();
-    const email = (currentUser?.email || '').toLowerCase().trim();
 
-    if (email !== 'parthkrishnadas700@gmail.com') {
-      setError(true);
-      setErrorMsg('Access Denied: Only parthkrishnadas700@gmail.com is authorized as Administrator.');
-      triggerHapticNotification('error');
-      return;
-    }
-
-    if (clean === 'cb1412') {
+    if (clean === 'cb1412' || clean === '1412') {
       setError(false);
       setErrorMsg('');
       setSuccess(true);
@@ -48,7 +38,7 @@ export const AdminPasscodeModal: React.FC<AdminPasscodeModalProps> = ({ isOpen, 
         setPasscode('');
         onSuccess();
         onClose();
-      }, 600);
+      }, 500);
     } else {
       setError(true);
       setErrorMsg('Incorrect admin passcode. Access denied.');
@@ -57,10 +47,11 @@ export const AdminPasscodeModal: React.FC<AdminPasscodeModalProps> = ({ isOpen, 
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn pointer-events-auto">
       <div className="relative w-full max-w-md p-6 sm:p-8 rounded-3xl bg-[#0F0F17] border border-purple-500/40 shadow-2xl shadow-purple-500/10 space-y-6">
         {/* Close Button */}
         <button
+          type="button"
           onClick={onClose}
           className="absolute top-4 right-4 p-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
         >
@@ -77,7 +68,7 @@ export const AdminPasscodeModal: React.FC<AdminPasscodeModalProps> = ({ isOpen, 
           <div>
             <h3 className="text-xl font-black text-white tracking-tight">Admin Passcode Required</h3>
             <p className="text-xs text-gray-400 mt-1 leading-relaxed">
-              Enter the secret administrator passcode to unlock the <strong className="text-purple-400">Live User Directory & Telemetry Console</strong>.
+              Enter authorized security passcode to unlock the <strong className="text-purple-400">Telemetry Console</strong>.
             </p>
           </div>
         </div>
@@ -93,13 +84,12 @@ export const AdminPasscodeModal: React.FC<AdminPasscodeModalProps> = ({ isOpen, 
               <input
                 type="password"
                 required
-                autoFocus
                 value={passcode}
                 onChange={(e) => {
                   setPasscode(e.target.value);
                   setError(false);
                 }}
-                placeholder="Enter admin passcode..."
+                placeholder="••••••••"
                 className={`w-full pl-11 pr-4 py-3 rounded-xl text-sm font-mono font-bold bg-[#141420] text-white border transition-all focus:outline-none ${
                   error 
                     ? 'border-red-500 text-red-400 animate-shake' 

@@ -106,6 +106,7 @@ function MainApp() {
       <Routes>
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/privacy" element={<TermsPage />} />
+        <Route path="/delete-account" element={<TermsPage />} />
 
         {user ? (
           <>

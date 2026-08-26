@@ -7,6 +7,7 @@ import 'react-calendar/dist/Calendar.css';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Brush } from 'recharts';
 import { PieChart, Calendar as CalendarIcon, Activity, ArrowUpRight, ArrowDownRight, X, TrendingUp } from 'lucide-react';
 import { useThemeStyles } from '../components/DashboardWeb';
+import { SavingsBadgesWidget } from '../components/SavingsBadgesWidget';
 
 export const Dashboard: React.FC = () => {
   const { transactions, accounts, checkStreak, currency } = useFinanceStore();
@@ -75,6 +76,9 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
       </header>
+
+      {/* Gamified Savings Badges System */}
+      <SavingsBadgesWidget />
 
       {/* Summary Micro Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

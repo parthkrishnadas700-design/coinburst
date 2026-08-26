@@ -3,6 +3,7 @@ import {
   getAuth, 
   GoogleAuthProvider, 
   signInWithPopup, 
+  signInWithRedirect,
   signOut,
   updateProfile,
   signInWithEmailAndPassword,
@@ -15,13 +16,13 @@ import { Capacitor } from "@capacitor/core";
 import { GoogleAuth } from "@codetrix-studio/capacitor-google-auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBTKlQb9JaFs2j98VaUPozEojxgp8tOvso",
+  apiKey: "AIzaSyAsGuc2CyNEoGk1ToTxU6p4U0iLK81XUmY",
   authDomain: "coinburst-5bdc5.firebaseapp.com",
   databaseURL: "https://coinburst-5bdc5-default-rtdb.firebaseio.com",
   projectId: "coinburst-5bdc5",
   storageBucket: "coinburst-5bdc5.firebasestorage.app",
   messagingSenderId: "44180464714",
-  appId: "1:44180464714:web:8bb56db76346b0b26632b3",
+  appId: "1:44180464714:android:21e33181419d46ec6632b3",
   measurementId: "G-6EWFMDMX7H"
 };
 
@@ -45,7 +46,7 @@ if (Capacitor.isNativePlatform()) {
   });
 }
 
-// Google Sign-In (Native Google Dialog on Android APK, Popup/Redirect on Web Browser)
+// Google Sign-In (Native Google Dialog on Android APK, Popup / Redirect on Web Browser & WebView)
 export const signInWithGoogle = async () => {
   if (Capacitor.isNativePlatform()) {
     try {
@@ -79,21 +80,32 @@ export const signInWithGoogle = async () => {
     }
   }
 
-  // Web Browser & Native Fallback (Popup Auth)
+  // Web Browser & Native Fallback (In-App Popup Auth with Redirect Fallback)
   try {
     const result = await signInWithPopup(auth, googleProvider);
     return result.user;
   } catch (error: any) {
     console.error("Google Sign-In error:", error);
-    throw new Error(error.message || 'Google Authentication failed.');
+    if (
+      error.code === 'auth/popup-closed-by-user' || 
+      error.code === 'auth/popup-blocked' || 
+      error.code === 'auth/cancelled-popup-request'
+    ) {
+      console.log("Popup blocked or closed by WebView/browser, falling back to signInWithRedirect...");
+      try {
+        await signInWithRedirect(auth, googleProvider);
+        return null;
+      } catch (redirectErr: any) {
+        console.error("Google Redirect Error:", redirectErr);
+        throw new Error("Google Sign-In popup was closed or blocked. Redirecting for authentication...");
+      }
+    }
+    throw error;
   }
 };
 
 // Call this after app initialization to handle redirect result (only when web redirect occurs)
 export const handleGoogleRedirectResult = async () => {
-  if (!window.location.search && !window.location.hash) {
-    return null;
-  }
   try {
     const result = await getRedirectResult(auth);
     if (result?.user) {
@@ -109,8 +121,9 @@ export const handleGoogleRedirectResult = async () => {
 
 export const signUpWithEmail = async (email: string, pass: string, name: string) => {
   try {
-    const result = await createUserWithEmailAndPassword(auth, email, pass);
-    await updateProfile(result.user, { displayName: name });
+    const cleanEmail = email.trim().toLowerCase();
+    const result = await createUserWithEmailAndPassword(auth, cleanEmail, pass);
+    await updateProfile(result.user, { displayName: name.trim() });
     return result.user;
   } catch (error) {
     console.error("Email Sign-Up Error:", error);
@@ -120,7 +133,8 @@ export const signUpWithEmail = async (email: string, pass: string, name: string)
 
 export const signInWithEmail = async (email: string, pass: string) => {
   try {
-    const result = await signInWithEmailAndPassword(auth, email, pass);
+    const cleanEmail = email.trim().toLowerCase();
+    const result = await signInWithEmailAndPassword(auth, cleanEmail, pass);
     return result.user;
   } catch (error) {
     console.error("Email Sign-In Error:", error);

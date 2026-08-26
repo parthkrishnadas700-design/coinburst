@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, ActivityIndicator, Modal } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { signInWithEmail, signUpWithEmail, signInWithGoogle } from '../shared/firebase';
 
@@ -41,6 +41,20 @@ export const LoginScreen: React.FC = () => {
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {/* Non-touchable Connecting Overlay */}
+      <Modal visible={googleLoading} transparent animationType="fade">
+        <View style={styles.modalOverlay} pointerEvents="auto">
+          <LinearGradient colors={['#FF007F', '#00FF88', '#00E5FF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.logoGradient}>
+            <View style={styles.logoInner}>
+              <Text style={styles.logoText}>CB</Text>
+            </View>
+          </LinearGradient>
+          <ActivityIndicator size="large" color="#00FF88" style={{ marginTop: 24 }} />
+          <Text style={styles.connectingTitle}>Connecting to Google...</Text>
+          <Text style={styles.connectingSubtitle}>Please wait, establishing secure vault access...</Text>
+        </View>
+      </Modal>
+
       <View style={styles.inner}>
         <LinearGradient colors={['#FF007F', '#00FF88', '#00E5FF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.logoGradient}>
           <View style={styles.logoInner}>
@@ -50,6 +64,27 @@ export const LoginScreen: React.FC = () => {
 
         <Text style={styles.title}>CoinBurst</Text>
         <Text style={styles.subtitle}>Your Financial Nexus</Text>
+
+        {/* Prominent Google Sign-In Button on TOP */}
+        <TouchableOpacity 
+          onPress={handleGoogleAuth} 
+          disabled={loading || googleLoading} 
+          style={styles.googleBtn} 
+          activeOpacity={0.8}
+        >
+          <View style={styles.googleBtnContent}>
+            <View style={styles.googleIconBadge}>
+              <Text style={styles.googleIconText}>G</Text>
+            </View>
+            <Text style={styles.googleBtnText}>Continue with Google</Text>
+          </View>
+        </TouchableOpacity>
+
+        <View style={styles.dividerContainer}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>OR</Text>
+          <View style={styles.dividerLine} />
+        </View>
 
         {isSignUp && (
           <TextInput
@@ -84,30 +119,6 @@ export const LoginScreen: React.FC = () => {
           </LinearGradient>
         </TouchableOpacity>
 
-        <View style={styles.dividerContainer}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>OR</Text>
-          <View style={styles.dividerLine} />
-        </View>
-
-        <TouchableOpacity 
-          onPress={handleGoogleAuth} 
-          disabled={loading || googleLoading} 
-          style={styles.googleBtn} 
-          activeOpacity={0.8}
-        >
-          {googleLoading ? (
-            <ActivityIndicator color="#4285F4" />
-          ) : (
-            <View style={styles.googleBtnContent}>
-              <View style={styles.googleIconBadge}>
-                <Text style={styles.googleIconText}>G</Text>
-              </View>
-              <Text style={styles.googleBtnText}>Continue with Google</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-
         <TouchableOpacity onPress={() => setIsSignUp(!isSignUp)} style={{ marginTop: 24 }}>
           <Text style={styles.toggleText}>
             {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
@@ -121,6 +132,9 @@ export const LoginScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#07050F' },
   inner: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(7, 5, 15, 0.95)', justifyContent: 'center', alignItems: 'center', padding: 24 },
+  connectingTitle: { fontSize: 20, fontWeight: '900', color: '#FFF', marginTop: 16 },
+  connectingSubtitle: { fontSize: 12, color: '#9CA3AF', marginTop: 6, textAlign: 'center' },
   logoGradient: { width: 80, height: 80, borderRadius: 20, padding: 3 },
   logoInner: { flex: 1, backgroundColor: '#0B0B0F', borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
   logoText: { fontSize: 32, fontWeight: '900', color: '#fff' },
@@ -132,11 +146,12 @@ const styles = StyleSheet.create({
   dividerContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 20, width: '100%' },
   dividerLine: { flex: 1, height: 1, backgroundColor: '#1E1E26' },
   dividerText: { color: '#6B7280', fontSize: 12, fontWeight: '700', marginHorizontal: 12 },
-  googleBtn: { width: 280, backgroundColor: '#121218', borderWidth: 1, borderColor: '#2A2A36', paddingVertical: 14, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  googleBtn: { width: 280, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#FFFFFF', paddingVertical: 14, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   googleBtnContent: { flexDirection: 'row', alignItems: 'center' },
-  googleIconBadge: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', marginRight: 10 },
-  googleIconText: { color: '#4285F4', fontWeight: '900', fontSize: 14 },
-  googleBtnText: { color: '#FFFFFF', fontWeight: '700', fontSize: 14 },
+  googleIconBadge: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#EA4335', alignItems: 'center', justifyContent: 'center', marginRight: 10 },
+  googleIconText: { color: '#FFFFFF', fontWeight: '900', fontSize: 14 },
+  googleBtnText: { color: '#000000', fontWeight: '900', fontSize: 14, textTransform: 'uppercase' },
   toggleText: { color: '#00FF88', fontSize: 13, fontWeight: '600' },
 });
+
 

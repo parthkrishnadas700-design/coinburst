@@ -12,13 +12,13 @@ import { getDatabase } from "firebase/database";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBTKlQb9JaFs2j98VaUPozEojxgp8tOvso",
+  apiKey: "AIzaSyAsGuc2CyNEoGk1ToTxU6p4U0iLK81XUmY",
   authDomain: "coinburst-5bdc5.firebaseapp.com",
   databaseURL: "https://coinburst-5bdc5-default-rtdb.firebaseio.com",
   projectId: "coinburst-5bdc5",
   storageBucket: "coinburst-5bdc5.firebasestorage.app",
   messagingSenderId: "44180464714",
-  appId: "1:44180464714:web:8bb56db76346b0b26632b3",
+  appId: "1:44180464714:android:21e33181419d46ec6632b3",
   measurementId: "G-6EWFMDMX7H"
 };
 

@@ -17,6 +17,7 @@ import { CalendarChartColumn } from './CalendarChartColumn';
 import { WalletSlidebar } from './WalletSlidebar';
 import { TermsModal } from './TermsModal';
 import { ProfitLossWidget } from './ProfitLossWidget';
+import { SavingsBadgesWidget } from './SavingsBadgesWidget';
 import { UserTelemetryPanel } from './UserTelemetryPanel';
 import { ReceiptScannerModal } from './ReceiptScannerModal';
 import { BurnRatePredictor } from './BurnRatePredictor';
@@ -947,6 +948,9 @@ export const DashboardWeb: React.FC<{
                 <div className="flex-1 space-y-8 w-full">
                   {/* Profit & Loss Sentinel Widget */}
                   <ProfitLossWidget />
+
+                  {/* Gamified Savings Badges System */}
+                  <SavingsBadgesWidget />
 
                   {/* Cards */}
                   <section>
