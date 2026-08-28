@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import coinburstLogo from '../assets/coinburst_logo.png';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ShieldCheck, Zap, Download, ExternalLink } from 'lucide-react';
+import { Sparkles, ShieldCheck, Zap, Download, ExternalLink, RefreshCw } from 'lucide-react';
 import { sendLocalNotification } from '../shared/nativeNotifications';
 import { database } from '../shared/firebase';
 import { ref, onValue } from 'firebase/database';
@@ -64,6 +64,7 @@ export const checkAppUpdateStatus = async (): Promise<{
 export const UpdatePromptModal: React.FC = () => {
   const user = useFinanceStore((state) => state.user);
   const [showModal, setShowModal] = useState(false);
+  const [isUpdatingDirectly, setIsUpdatingDirectly] = useState(false);
   const [updateReason, setUpdateReason] = useState<string>('New build deployment available');
   const pendingMetaRef = React.useRef<{ version?: string; buildTime?: number | string }>({});
 
@@ -79,7 +80,7 @@ export const UpdatePromptModal: React.FC = () => {
       sendLocalNotification({
         id: 99991,
         title: '🚀 CoinBurst App Update Required!',
-        body: 'A critical update is ready. Tap to update on Google Play Store.',
+        body: 'A critical update is ready. Update directly in-app or via Google Play Store.',
       });
     },
     onOfflineReady() {
@@ -132,7 +133,7 @@ export const UpdatePromptModal: React.FC = () => {
               sendLocalNotification({
                 id: 99992,
                 title: `🚀 CoinBurst v${data.version} Mandatory Update!`,
-                body: 'A critical update was deployed. Please update via Google Play Store.',
+                body: 'A critical update was deployed. Please update directly in-app or via Google Play Store.',
               });
             } else {
               localStorage.setItem('coinburst_installed_ver', data.version);
@@ -182,8 +183,9 @@ export const UpdatePromptModal: React.FC = () => {
     };
   }, []);
 
-  const handleUpdateClick = async () => {
-    // Commit pending meta to localStorage before redirecting
+  // 1. Functional Action 1: Update Directly in App (Instant Reload & Service Worker Refresh)
+  const handleDirectAppUpdate = async () => {
+    setIsUpdatingDirectly(true);
     if (pendingMetaRef.current.version) {
       localStorage.setItem('coinburst_installed_ver', String(pendingMetaRef.current.version));
     }
@@ -212,7 +214,20 @@ export const UpdatePromptModal: React.FC = () => {
       console.warn('[AutoUpdate] Cache reset notice:', err);
     }
 
-    // Direct user to Google Play Store listing URL
+    const baseUrl = (window.location.origin && window.location.origin !== 'null') 
+      ? (window.location.origin + window.location.pathname) 
+      : window.location.pathname;
+    window.location.href = baseUrl;
+  };
+
+  // 2. Functional Action 2: Update via Google Play Store Link
+  const handlePlayStoreLinkUpdate = () => {
+    if (pendingMetaRef.current.version) {
+      localStorage.setItem('coinburst_installed_ver', String(pendingMetaRef.current.version));
+    }
+    if (pendingMetaRef.current.buildTime) {
+      localStorage.setItem('coinburst_installed_build_time', String(pendingMetaRef.current.buildTime));
+    }
     window.location.href = PLAY_STORE_URL;
   };
 
@@ -254,7 +269,7 @@ export const UpdatePromptModal: React.FC = () => {
 
           {/* Body Content */}
           <p className="text-xs text-gray-300 leading-relaxed mb-4">
-            A critical app update is available (<span className="text-emerald-400 font-mono font-bold">{updateReason}</span>). To continue using CoinBurst safely with new features, you must update the application via Google Play Store.
+            A critical update is available (<span className="text-emerald-400 font-mono font-bold">{updateReason}</span>). Please select an update option below to apply the latest build and security patches.
           </p>
 
           {/* Feature Badges */}
@@ -269,15 +284,27 @@ export const UpdatePromptModal: React.FC = () => {
             </div>
           </div>
 
-          {/* Action Button: Mandatory Update Only (No Later button) */}
-          <div className="w-full">
+          {/* Action Buttons: 2 Functional Update Options */}
+          <div className="flex flex-col gap-3">
+            {/* Button 1: Update Directly in App */}
             <button
-              onClick={handleUpdateClick}
-              className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 via-emerald-400 to-cyan-400 hover:from-emerald-400 hover:to-cyan-300 text-[#07050F] font-black uppercase text-xs tracking-wider flex items-center justify-center gap-2.5 transition-all duration-300 shadow-[0_4px_25px_rgba(0,255,136,0.5)] cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+              onClick={handleDirectAppUpdate}
+              disabled={isUpdatingDirectly}
+              className="w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-emerald-500 via-emerald-400 to-cyan-400 hover:from-emerald-400 hover:to-cyan-300 text-[#07050F] font-black uppercase text-xs tracking-wider flex items-center justify-center gap-2.5 transition-all duration-300 shadow-[0_4px_25px_rgba(0,255,136,0.4)] cursor-pointer disabled:opacity-60"
             >
-              <Download className="w-4 h-4" />
-              <span>Update App on Google Play Store</span>
-              <ExternalLink className="w-4 h-4 ml-1" />
+              <RefreshCw className={`w-4 h-4 ${isUpdatingDirectly ? 'animate-spin' : ''}`} />
+              <span>{isUpdatingDirectly ? 'Applying Direct Update...' : '1. Update Directly in App'}</span>
+            </button>
+
+            {/* Button 2: Update via Google Play Link */}
+            <button
+              onClick={handlePlayStoreLinkUpdate}
+              disabled={isUpdatingDirectly}
+              className="w-full py-3.5 px-5 rounded-2xl bg-white/5 hover:bg-white/10 border border-cyan-500/40 text-cyan-300 font-bold uppercase text-xs tracking-wider flex items-center justify-center gap-2.5 transition-all duration-300 cursor-pointer disabled:opacity-60"
+            >
+              <Download className="w-4 h-4 text-cyan-400" />
+              <span>2. Update via Google Play Link</span>
+              <ExternalLink className="w-3.5 h-3.5 text-cyan-400 ml-1" />
             </button>
           </div>
         </motion.div>
@@ -285,4 +312,5 @@ export const UpdatePromptModal: React.FC = () => {
     </AnimatePresence>
   );
 };
+
 
