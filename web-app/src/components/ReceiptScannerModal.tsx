@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Camera, Upload, Sparkles, CheckCircle2, X, DollarSign, Tag, Building2, ArrowRight, Edit3 } from 'lucide-react';
 import { createWorker } from 'tesseract.js';
 import { useFinanceStore } from '../shared/useFinanceStore';
@@ -243,8 +244,8 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({ isOpen
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn select-none">
+  return createPortal(
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn select-none pointer-events-auto">
       <div className="relative w-full max-w-lg p-6 rounded-3xl bg-[#0F0F17] border border-cyan-500/40 shadow-2xl shadow-cyan-500/10 space-y-6 overflow-y-auto max-h-[90vh]">
         {/* Close Button */}
         <button
@@ -414,6 +415,7 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({ isOpen
           </form>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

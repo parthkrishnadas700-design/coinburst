@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useFinanceStore, formatCurrency } from '../shared/useFinanceStore';
 import type { Account } from '../shared/useFinanceStore';
 import { useThemeStyles } from './DashboardWeb';
@@ -323,10 +324,10 @@ export const WalletSlidebar: React.FC<WalletSlidebarProps> = ({ onOpenAddWallet,
         </motion.div>
       </AnimatePresence>
 
-      {/* --- Modal for Custom Deposit / Add Money --- */}
-      <AnimatePresence>
-        {targetAccount && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
+      {/* --- Modal for Custom Deposit / Add Money (Portalled to document.body) --- */}
+      {targetAccount && createPortal(
+        <AnimatePresence>
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md pointer-events-auto select-none">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -441,8 +442,9 @@ export const WalletSlidebar: React.FC<WalletSlidebarProps> = ({ onOpenAddWallet,
               </form>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
 
     </div>
   );

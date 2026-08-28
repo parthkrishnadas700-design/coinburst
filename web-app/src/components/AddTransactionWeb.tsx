@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useFinanceStore, SUPPORTED_CURRENCIES } from '../shared/useFinanceStore';
 import type { Transaction } from '../shared/useFinanceStore';
 import { useThemeStyles } from './DashboardWeb';
@@ -124,19 +125,21 @@ export const AddTransactionWeb: React.FC<{
     onClose();
   };
 
-  return (
+  if (!isOpen) return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <div 
           onTouchMove={(e) => e.stopPropagation()}
-          className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 overflow-y-auto overscroll-contain"
+          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 overflow-y-auto overscroll-contain pointer-events-auto select-none"
         >
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-black/60 backdrop-blur-md"
+            className="fixed inset-0 bg-black/80 backdrop-blur-md cursor-pointer"
           />
 
           <motion.div
@@ -321,6 +324,7 @@ export const AddTransactionWeb: React.FC<{
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };

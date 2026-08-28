@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useFinanceStore, formatCurrency, SUPPORTED_CURRENCIES } from '../shared/useFinanceStore';
 import type { ThemeType, Transaction } from '../shared/useFinanceStore';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -2122,25 +2123,32 @@ export const DashboardWeb: React.FC<{
 
 
 
-      {/* ── Add Account Modal ─────────────────────────────────────────── */}
-      <AnimatePresence>
-        {showAddAccount && (
-          <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 overflow-y-auto">
+      {/* ── Add Account Modal (Portalled to document.body for top-level touch & click focus) ── */}
+      {showAddAccount && createPortal(
+        <AnimatePresence>
+          <div 
+            onTouchMove={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-[99999] flex items-center justify-center p-4 overflow-y-auto pointer-events-auto select-none"
+          >
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setShowAddAccount(false)}
-              className="absolute inset-0 bg-black/70 backdrop-blur-md"
+              className="fixed inset-0 bg-black/80 backdrop-blur-md cursor-pointer"
             />
             <motion.div
               initial={{ scale: 0.9, y: 30, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.9, y: 30, opacity: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 250 }}
-              className={`relative z-10 w-full max-w-md my-auto p-6 sm:p-8 rounded-3xl ${cStyles.cardBg} ${cStyles.shadow}`}
+              className={`relative z-10 w-full max-w-md my-auto p-6 sm:p-8 rounded-3xl ${cStyles.cardBg} ${cStyles.shadow} border border-emerald-500/40 text-white select-text`}
             >
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-black">Add Wallet Node</h3>
-                <button onClick={() => setShowAddAccount(false)} className={`p-2 rounded-full cursor-pointer ${cStyles.closeBtn}`}>
+                <h3 className="text-xl font-black text-white">Add Wallet Node</h3>
+                <button 
+                  type="button"
+                  onClick={() => setShowAddAccount(false)} 
+                  className="p-2 rounded-full cursor-pointer hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+                >
                   <ArrowDownRight className="w-5 h-5 rotate-45" />
                 </button>
               </div>
@@ -2148,25 +2156,33 @@ export const DashboardWeb: React.FC<{
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Wallet Name</label>
                   <input
-                    required value={newAccName} onChange={e => setNewAccName(e.target.value)}
-                    placeholder="e.g. Chase Savings"
+                    required 
+                    value={newAccName} 
+                    onChange={e => setNewAccName(e.target.value)}
+                    placeholder="e.g. Chase Savings / Cash Wallet"
                     className={`w-full px-4 py-3 rounded-xl focus:outline-none ${cStyles.input}`}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Type</label>
-                    <select value={newAccType} onChange={e => setNewAccType(e.target.value as any)} className={`w-full px-4 py-3 rounded-xl focus:outline-none ${cStyles.input}`}>
-                      <option value="cash">Cash</option>
-                      <option value="bank">Bank</option>
-                      <option value="credit">Credit</option>
+                    <select 
+                      value={newAccType} 
+                      onChange={e => setNewAccType(e.target.value as any)} 
+                      className={`w-full px-4 py-3 rounded-xl focus:outline-none ${cStyles.input}`}
+                    >
+                      <option value="cash" className="bg-[#141420] text-white">Cash</option>
+                      <option value="bank" className="bg-[#141420] text-white">Bank</option>
+                      <option value="credit" className="bg-[#141420] text-white">Credit</option>
                     </select>
                   </div>
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Initial Balance</label>
                     <input
-                      type="number" step="0.01"
-                      value={newAccBalance} onChange={e => setNewAccBalance(e.target.value)}
+                      type="number" 
+                      step="0.01"
+                      value={newAccBalance} 
+                      onChange={e => setNewAccBalance(e.target.value)}
                       placeholder="0.00"
                       className={`w-full px-4 py-3 rounded-xl focus:outline-none font-mono ${cStyles.input}`}
                     />
@@ -2175,12 +2191,18 @@ export const DashboardWeb: React.FC<{
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Color Tag</label>
                   <div className="flex items-center gap-3">
-                    <input type="color" value={newAccColor} onChange={e => setNewAccColor(e.target.value)}
+                    <input 
+                      type="color" 
+                      value={newAccColor} 
+                      onChange={e => setNewAccColor(e.target.value)}
                       className="w-12 h-10 rounded-lg cursor-pointer border-0 bg-transparent"
                     />
                     <div className="flex gap-2 flex-wrap">
                       {['#10B981','#3B82F6','#EC4899','#8B5CF6','#F59E0B','#EF4444'].map(c => (
-                        <button type="button" key={c} onClick={() => setNewAccColor(c)}
+                        <button 
+                          type="button" 
+                          key={c} 
+                          onClick={() => setNewAccColor(c)}
                           className="w-7 h-7 rounded-full cursor-pointer border-2 transition-all"
                           style={{ backgroundColor: c, borderColor: newAccColor === c ? 'white' : 'transparent' }}
                         />
@@ -2188,43 +2210,58 @@ export const DashboardWeb: React.FC<{
                     </div>
                   </div>
                 </div>
-                <button type="submit" className={`w-full py-3 rounded-xl font-black text-xs uppercase tracking-wider ${cStyles.primaryBtn}`}>
+                <button 
+                  type="submit" 
+                  className={`w-full py-3.5 rounded-xl font-black text-xs uppercase tracking-wider shadow-lg transition-all cursor-pointer ${cStyles.primaryBtn}`}
+                >
                   Create Wallet Node
                 </button>
               </form>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
 
-      {/* ── Add Budget Modal ─────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {showAddBudget && (
-          <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 overflow-y-auto">
+      {/* ── Add Budget Modal (Portalled to document.body for top-level touch & click focus) ── */}
+      {showAddBudget && createPortal(
+        <AnimatePresence>
+          <div 
+            onTouchMove={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-[99999] flex items-center justify-center p-4 overflow-y-auto pointer-events-auto select-none"
+          >
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setShowAddBudget(false)}
-              className="absolute inset-0 bg-black/70 backdrop-blur-md"
+              className="fixed inset-0 bg-black/80 backdrop-blur-md cursor-pointer"
             />
             <motion.div
               initial={{ scale: 0.9, y: 30, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.9, y: 30, opacity: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 250 }}
-              className={`relative z-10 w-full max-w-md my-auto p-6 sm:p-8 rounded-3xl ${cStyles.cardBg} ${cStyles.shadow}`}
+              className={`relative z-10 w-full max-w-md my-auto p-6 sm:p-8 rounded-3xl ${cStyles.cardBg} ${cStyles.shadow} border border-emerald-500/40 text-white select-text`}
             >
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-black">Set Budget Limit</h3>
-                <button onClick={() => setShowAddBudget(false)} className={`p-2 rounded-full cursor-pointer ${cStyles.closeBtn}`}>
+                <h3 className="text-xl font-black text-white">Set Budget Limit</h3>
+                <button 
+                  type="button"
+                  onClick={() => setShowAddBudget(false)} 
+                  className="p-2 rounded-full cursor-pointer hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+                >
                   <ArrowDownRight className="w-5 h-5 rotate-45" />
                 </button>
               </div>
               <form onSubmit={handleAddBudget} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Category</label>
-                  <select value={newBudgetCategory} onChange={e => setNewBudgetCategory(e.target.value)} className={`w-full px-4 py-3 rounded-xl focus:outline-none ${cStyles.input}`}>
+                  <select 
+                    value={newBudgetCategory} 
+                    onChange={e => setNewBudgetCategory(e.target.value)} 
+                    className={`w-full px-4 py-3 rounded-xl focus:outline-none ${cStyles.input}`}
+                  >
                     {['Food', 'Entertainment', 'Shopping', 'Rent', 'Utilities', 'Travel', 'Healthcare', 'Transport', 'Education', 'Other', 'all'].map(cat => (
-                      <option key={cat} value={cat}>{cat === 'all' ? '📊 All Categories (Overall)' : cat}</option>
+                      <option key={cat} value={cat} className="bg-[#141420] text-white">{cat === 'all' ? '📊 All Categories (Overall)' : cat}</option>
                     ))}
                   </select>
                 </div>
@@ -2232,8 +2269,12 @@ export const DashboardWeb: React.FC<{
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Monthly Limit</label>
                     <input
-                      required type="number" step="0.01" min="1"
-                      value={newBudgetLimit} onChange={e => setNewBudgetLimit(e.target.value)}
+                      required 
+                      type="number" 
+                      step="0.01" 
+                      min="1"
+                      value={newBudgetLimit} 
+                      onChange={e => setNewBudgetLimit(e.target.value)}
                       placeholder="500.00"
                       className={`w-full px-4 py-3 rounded-xl focus:outline-none font-mono ${cStyles.input}`}
                     />
@@ -2241,20 +2282,26 @@ export const DashboardWeb: React.FC<{
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Month (YYYY-MM)</label>
                     <input
-                      required type="month"
-                      value={newBudgetMonth} onChange={e => setNewBudgetMonth(e.target.value)}
+                      required 
+                      type="month"
+                      value={newBudgetMonth} 
+                      onChange={e => setNewBudgetMonth(e.target.value)}
                       className={`w-full px-4 py-3 rounded-xl focus:outline-none ${cStyles.input}`}
                     />
                   </div>
                 </div>
-                <button type="submit" className={`w-full py-3 rounded-xl font-black text-xs uppercase tracking-wider ${cStyles.primaryBtn}`}>
+                <button 
+                  type="submit" 
+                  className={`w-full py-3.5 rounded-xl font-black text-xs uppercase tracking-wider shadow-lg transition-all cursor-pointer ${cStyles.primaryBtn}`}
+                >
                   Activate Budget Limiter
                 </button>
               </form>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* Terms & Conditions Modal */}
       <TermsModal isOpen={showTermsModal} onClose={() => setShowTermsModal(false)} />
