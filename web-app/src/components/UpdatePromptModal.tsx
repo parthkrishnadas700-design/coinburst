@@ -23,7 +23,7 @@ export const checkAppUpdateStatus = async (): Promise<{
   buildTime?: number | string;
   reason?: string;
 }> => {
-  const currentVersion = localStorage.getItem('coinburst_installed_ver') || '2.28.0';
+  const currentVersion = localStorage.getItem('coinburst_installed_ver') || '2.29.0';
   const currentBuildTime = localStorage.getItem('coinburst_installed_build_time');
 
   try {
@@ -44,9 +44,9 @@ export const checkAppUpdateStatus = async (): Promise<{
         return {
           isUpdateAvailable: true,
           currentVersion,
-          latestVersion: data.version || '2.28.0',
+          latestVersion: data.version || '2.29.0',
           buildTime: data.buildTime,
-          reason: `Build v${data.version || '2.28.0'} Code ${data.versionCode || 41}`
+          reason: `Build v${data.version || '2.29.0'} Code ${data.versionCode || 42}`
         };
       }
     }
@@ -77,11 +77,16 @@ export const UpdatePromptModal: React.FC = () => {
       console.log('[PWA] Service worker update available!');
       setShowModal(true);
       setUpdateReason('New Service Worker build cached');
-      sendLocalNotification({
-        id: 99991,
-        title: '🚀 CoinBurst App Update Required!',
-        body: 'A critical update is ready. Update directly in-app or via Google Play Store.',
-      });
+
+      const notifyKey = 'coinburst_pwa_update_notified';
+      if (!sessionStorage.getItem(notifyKey)) {
+        sessionStorage.setItem(notifyKey, 'true');
+        sendLocalNotification({
+          id: 99991,
+          title: '🚀 CoinBurst App Update Required!',
+          body: 'A critical update is ready. Update directly in-app or via Google Play Store.',
+        });
+      }
     },
     onOfflineReady() {
       console.log('[PWA] Application is ready for offline usage.');
@@ -129,12 +134,18 @@ export const UpdatePromptModal: React.FC = () => {
               pendingMetaRef.current = { version: data.version, buildTime: data.buildTime };
               console.log('[AutoUpdate] Deployment update detected:', data.version, data.buildTime);
               setShowModal(true);
-              setUpdateReason(`Build v${data.version} (Code ${data.versionCode || 41}) deployed`);
-              sendLocalNotification({
-                id: 99992,
-                title: `🚀 CoinBurst v${data.version} Mandatory Update!`,
-                body: 'A critical update was deployed. Please update directly in-app or via Google Play Store.',
-              });
+              setUpdateReason(`Build v${data.version} (Code ${data.versionCode || 42}) deployed`);
+
+              // 🔒 Deduplicate: Send ONLY 1 notification per release
+              const notifyKey = `coinburst_update_notified_${data.version}_${data.buildTime}`;
+              if (!sessionStorage.getItem(notifyKey)) {
+                sessionStorage.setItem(notifyKey, 'true');
+                sendLocalNotification({
+                  id: 99992,
+                  title: `🚀 CoinBurst v${data.version} Mandatory Update!`,
+                  body: 'A critical update was deployed. Please update directly in-app or via Google Play Store.',
+                });
+              }
             } else {
               localStorage.setItem('coinburst_installed_ver', data.version);
               localStorage.setItem('coinburst_installed_build_time', String(data.buildTime));
@@ -149,8 +160,8 @@ export const UpdatePromptModal: React.FC = () => {
     // Run check immediately on mount
     checkBuildMeta();
 
-    // 15-second polling interval
-    const interval = setInterval(checkBuildMeta, 15000);
+    // 5-minute polling interval (300,000 ms) to prevent network and notification spam
+    const interval = setInterval(checkBuildMeta, 300000);
     window.addEventListener('focus', checkBuildMeta);
 
     // Live Firebase Realtime Database Build & Version Sentinel (< 1 Sec WebSocket Push)
@@ -171,6 +182,16 @@ export const UpdatePromptModal: React.FC = () => {
           console.log('[FirebaseAutoUpdate] Live WebSocket update broadcast received:', remoteVer, remoteTime);
           setShowModal(true);
           setUpdateReason(`Live Broadcast v${remoteVer || '2.28.0'} active`);
+
+          const notifyKey = `coinburst_remote_update_notified_${remoteVer}_${remoteTime}`;
+          if (!sessionStorage.getItem(notifyKey)) {
+            sessionStorage.setItem(notifyKey, 'true');
+            sendLocalNotification({
+              id: 99993,
+              title: `🚀 CoinBurst v${remoteVer} Broadcast Update!`,
+              body: 'A new update broadcast was published by admin.',
+            });
+          }
         }
       }
     });
