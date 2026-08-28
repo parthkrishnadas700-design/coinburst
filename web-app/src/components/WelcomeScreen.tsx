@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import coinburstLogo from '../assets/coinburst_logo.png';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 
@@ -59,9 +60,11 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ userName, onComple
               initial={{ scale: 0, rotate: -180 }}
               animate={{ scale: 1, rotate: 0 }}
               transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.2 }}
-              className="w-24 h-24"
+              className="w-24 h-24 rounded-3xl bg-gradient-to-tr from-[#FF007F] via-[#00FF88] to-[#00E5FF] p-[3px] shadow-[0_0_40px_rgba(0,255,136,0.3)] flex items-center justify-center"
             >
-              <img src="/assets/coinburst_logo.png" alt="CoinBurst Logo" className="w-full h-full object-contain" />
+              <div className="w-full h-full bg-[#0B0B0F] rounded-3xl flex items-center justify-center p-2 overflow-hidden">
+                <img src={coinburstLogo} alt="CoinBurst Logo" className="w-full h-full object-contain rounded-2xl" />
+              </div>
             </motion.div>
 
             {/* Welcome Text */}

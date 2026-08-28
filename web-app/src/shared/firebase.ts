@@ -33,9 +33,12 @@ export const auth = getAuth(app);
 export const database = getDatabase(app);
 export const googleProvider = new GoogleAuthProvider();
 
-// Google Auth provider scopes
+// Google Auth provider scopes & custom parameters (Prompt account selector dialog)
 googleProvider.addScope("profile");
 googleProvider.addScope("email");
+googleProvider.setCustomParameters({
+  prompt: "select_account"
+});
 
 // Initialize Capacitor Native Google Auth if running on Android/iOS
 if (Capacitor.isNativePlatform()) {

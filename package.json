@@ -1,11 +1,12 @@
 {
   "name": "coinburst-workspace",
-  "version": "2.5.0",
+  "version": "2.16.0",
   "private": true,
   "scripts": {
     "dev": "npm --prefix web-app run dev",
     "build": "npm --prefix web-app run build",
     "dev:native": "npm --prefix native-app run start",
-    "start": "npm --prefix web-app run dev"
+    "start": "npm --prefix web-app run dev",
+    "deploy": "npm --prefix web-app run build && firebase deploy --only hosting"
   }
 }

@@ -213,28 +213,59 @@ export const GroupBillSplitter: React.FC = () => {
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
-  const handleShareWhatsApp = () => {
+  const handleShareWhatsApp = async () => {
+    const appReferralUrl = 'https://coinburst-5bdc5.web.app';
     let summaryText = `*${groupTitle} - Group Bill Split* 🧾\n`;
-    summaryText += `*Group Code:* \`${groupCode}\` (Join in CoinBurst App)\n`;
-    summaryText += `Total Bill: ${currency} ${totalBill.toLocaleString()}\n`;
-    summaryText += `Per Person Share (${members.length} people): ${currency} ${perPersonShare.toLocaleString()}\n\n`;
+    summaryText += `🔑 *Group Code:* \`${groupCode}\` (Enter in CoinBurst App to auto-join)\n`;
+    summaryText += `💰 *Total Bill:* ${currency} ${totalBill.toLocaleString()}\n`;
+    summaryText += `👤 *Per Person Share (${members.length} people):* ${currency} ${perPersonShare.toLocaleString()}\n\n`;
     summaryText += `*${settlementNotes}:*\n`;
 
     members.forEach(m => {
       const balance = m.paidAmount - perPersonShare;
       if (balance > 0) {
-        summaryText += `• ${m.name}: Paid ${currency} ${m.paidAmount} → *Receives ${currency} ${balance}*\n`;
+        summaryText += `• ${m.name}: Paid ${currency} ${m.paidAmount.toLocaleString()} → *Receives ${currency} ${balance.toLocaleString()}*\n`;
       } else if (balance < 0) {
-        summaryText += `• ${m.name}: Paid ${currency} ${m.paidAmount} → *Owes ${currency} ${Math.abs(balance)}*\n`;
+        summaryText += `• ${m.name}: Paid ${currency} ${m.paidAmount.toLocaleString()} → *Owes ${currency} ${Math.abs(balance).toLocaleString()}*\n`;
       } else {
-        summaryText += `• ${m.name}: Paid ${currency} ${m.paidAmount} → *Settled ✓*\n`;
+        summaryText += `• ${m.name}: Paid ${currency} ${m.paidAmount.toLocaleString()} → *Settled ✓*\n`;
       }
     });
 
-    summaryText += `\n_Enter Group Code ${groupCode} in CoinBurst App to auto-join & sync live!_ 🚀`;
+    summaryText += `\n🚀 *Auto-Join Group in CoinBurst:* ${appReferralUrl}\n`;
+    summaryText += `✨ *Referral Link (Track & Split Finances Free):* ${appReferralUrl}`;
 
+    // Try Web Share API first for Android/iOS mobile devices (bypasses WebView ERR_UNKNOWN_URL_SCHEME)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${groupTitle} - Bill Split`,
+          text: summaryText,
+        });
+        triggerHapticNotification('success');
+        showNativeToast('Settlement summary shared successfully!');
+        return;
+      } catch (err) {
+        if ((err as Error)?.name === 'AbortError') return;
+      }
+    }
+
+    // Fallback: Use wa.me link which works seamlessly in mobile browsers & WebViews
     const encoded = encodeURIComponent(summaryText);
-    window.open(`https://wa.me/?text=${encoded}`, '_blank');
+    const whatsappWaUrl = `https://wa.me/?text=${encoded}`;
+    const whatsappApiUrl = `https://api.whatsapp.com/send?text=${encoded}`;
+
+    try {
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (isMobile) {
+        window.location.href = whatsappWaUrl;
+      } else {
+        window.open(whatsappApiUrl, '_blank');
+      }
+    } catch {
+      window.open(whatsappApiUrl, '_blank');
+    }
+
     triggerHapticNotification('success');
     showNativeToast('WhatsApp Settlement Summary Opened!');
   };
@@ -266,13 +297,6 @@ export const GroupBillSplitter: React.FC = () => {
             </h3>
           </div>
         </div>
-
-        <button
-          onClick={handleShareWhatsApp}
-          className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-xs flex items-center gap-2 shadow-lg transition-all cursor-pointer w-full md:w-auto justify-center"
-        >
-          <MessageCircle className="w-4 h-4" /> Share Summary & Code via WhatsApp
-        </button>
       </div>
 
       {/* 🔑 Unique Group Code Bar */}
@@ -298,17 +322,17 @@ export const GroupBillSplitter: React.FC = () => {
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
           {/* Join Form */}
-          <form onSubmit={handleJoinByCode} className="flex gap-1.5 flex-1 sm:flex-none">
+          <form onSubmit={handleJoinByCode} className="flex items-center gap-2 w-full">
             <input
               type="text"
-              placeholder="Enter Code (e.g. 7890)"
+              placeholder="Enter Code (e.g. CB-1234)"
               value={joinCodeInput}
               onChange={(e) => setJoinCodeInput(e.target.value)}
-              className="px-3 py-2 rounded-xl text-xs font-mono font-bold border border-cyan-500/40 bg-[#0B0B0F] text-white w-32 focus:outline-none focus:border-cyan-300"
+              className="p-2.5 rounded-xl border border-gray-700 bg-[#0F0F17] font-mono font-bold text-white text-xs focus:outline-none focus:border-cyan-400 w-full sm:w-44 uppercase"
             />
             <button
               type="submit"
-              className="px-3 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 font-bold text-white text-xs cursor-pointer shrink-0"
+              className="px-4 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 font-bold text-white text-xs shadow-md transition-all cursor-pointer shrink-0"
             >
               Join Group
             </button>
@@ -316,39 +340,36 @@ export const GroupBillSplitter: React.FC = () => {
 
           <button
             onClick={handleGenerateNewCode}
-            className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer shrink-0"
-            title="Create New Fresh Group Code"
+            className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-gray-300 transition-colors cursor-pointer shrink-0"
+            title="Create New Group Code"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      {/* Editable Group Title & Settlement Notes */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* Editable Group Title & Notes */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1 flex items-center gap-1">
-            <Edit3 className="w-3 h-3 text-cyan-400" /> Group Event Name
-          </label>
-          <input
-            type="text"
-            value={groupTitle}
-            onChange={(e) => handleTitleChange(e.target.value)}
-            placeholder="e.g. Goa Vacation 🌴 / Apartment 402 Rent"
-            className={`w-full p-3 rounded-xl border border-gray-700 ${cStyles.input} font-bold text-white text-sm focus:outline-none focus:border-cyan-400`}
-          />
+          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Group Event Title</label>
+          <div className="relative">
+            <Edit3 className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={groupTitle}
+              onChange={(e) => handleTitleChange(e.target.value)}
+              className={`w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-700 ${cStyles.input} font-bold text-white text-xs focus:outline-none focus:border-cyan-400`}
+            />
+          </div>
         </div>
 
         <div>
-          <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1 flex items-center gap-1">
-            <Edit3 className="w-3 h-3 text-purple-400" /> Settlement Section Title
-          </label>
+          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Settlement Description</label>
           <input
             type="text"
             value={settlementNotes}
             onChange={(e) => handleNotesChange(e.target.value)}
-            placeholder="e.g. Group Settlement Breakdown & Balances"
-            className={`w-full p-3 rounded-xl border border-gray-700 ${cStyles.input} font-bold text-white text-sm focus:outline-none focus:border-purple-400`}
+            className={`w-full px-3 py-2.5 rounded-xl border border-gray-700 ${cStyles.input} font-bold text-white text-xs focus:outline-none focus:border-cyan-400`}
           />
         </div>
       </div>
@@ -356,26 +377,26 @@ export const GroupBillSplitter: React.FC = () => {
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-1">
-          <span className="text-[10px] uppercase font-bold text-gray-400 block">Total Group Bill</span>
+          <span className="text-[10px] font-bold text-gray-400 uppercase block">Total Group Expense</span>
           <span className="font-mono font-black text-lg text-emerald-400">{currency} {totalBill.toLocaleString()}</span>
         </div>
 
         <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-1">
-          <span className="text-[10px] uppercase font-bold text-gray-400 block">Connected Members</span>
-          <span className="font-mono font-black text-lg text-white">{members.length} Members</span>
+          <span className="text-[10px] font-bold text-gray-400 uppercase block">Total Members</span>
+          <span className="font-mono font-black text-lg text-cyan-400">{members.length} People</span>
         </div>
 
         <div className="p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/30 space-y-1">
-          <span className="text-[10px] uppercase font-bold text-cyan-300 block">Equal Share / Person</span>
-          <span className="font-mono font-black text-lg text-cyan-400">{currency} {perPersonShare.toLocaleString()}</span>
+          <span className="text-[10px] font-bold text-cyan-300 uppercase block">Fair Per-Person Share</span>
+          <span className="font-mono font-black text-xl text-cyan-400">{currency} {perPersonShare.toLocaleString()}</span>
         </div>
       </div>
 
-      {/* Add Offline Friend Form */}
-      <form onSubmit={handleAddManualMember} className="flex flex-col sm:flex-row gap-3">
+      {/* Add New Member Input Form */}
+      <form onSubmit={handleAddManualMember} className="p-4 rounded-xl bg-white/5 border border-white/10 flex flex-col sm:flex-row items-center gap-3">
         <input
           type="text"
-          placeholder="Add offline friend name (e.g. Rahul)"
+          placeholder="Friend Name (e.g. Rahul)"
           value={newMemberName}
           onChange={(e) => setNewMemberName(e.target.value)}
           className={`flex-1 p-3 rounded-xl border border-gray-700 ${cStyles.input} font-bold text-white text-xs focus:outline-none focus:border-cyan-400`}
@@ -444,9 +465,9 @@ export const GroupBillSplitter: React.FC = () => {
                 <div className="text-right shrink-0">
                   <span className="text-[10px] uppercase font-bold text-gray-400 block">Status</span>
                   {balance > 0 ? (
-                    <span className="font-mono text-emerald-400 font-bold text-xs">Receives {currency} {balance}</span>
+                    <span className="font-mono text-emerald-400 font-bold text-xs">Receives {currency} {balance.toLocaleString()}</span>
                   ) : balance < 0 ? (
-                    <span className="font-mono text-pink-500 font-bold text-xs">Owes {currency} {Math.abs(balance)}</span>
+                    <span className="font-mono text-pink-500 font-bold text-xs">Owes {currency} {Math.abs(balance).toLocaleString()}</span>
                   ) : (
                     <span className="font-mono text-gray-400 font-bold text-xs">Settled ✓</span>
                   )}
@@ -465,6 +486,19 @@ export const GroupBillSplitter: React.FC = () => {
             </div>
           );
         })}
+      </div>
+
+      {/* WhatsApp Share & Referral Action Footer Bar */}
+      <div className="pt-4 border-t border-gray-800/80 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div className="text-xs text-gray-400">
+          Total Bill: <strong className="text-white font-mono">{currency} {totalBill.toLocaleString()}</strong> ({members.length} members)
+        </div>
+        <button
+          onClick={handleShareWhatsApp}
+          className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 via-emerald-400 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-[#07050F] font-black uppercase text-xs tracking-wider flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(0,255,136,0.3)] transition-all cursor-pointer"
+        >
+          <MessageCircle className="w-4 h-4 fill-current" /> Share Summary & Referral Link via WhatsApp
+        </button>
       </div>
     </div>
   );

@@ -4,10 +4,11 @@ import { motion } from 'framer-motion';
 import { 
   Code, 
   SlidersHorizontal, ArrowUpRight, PiggyBank, Bot, Settings,
-  CheckCircle2, Sparkles, BookOpen, ExternalLink, Globe, PlayCircle
+  CheckCircle2, Sparkles, BookOpen, ExternalLink, Globe, PlayCircle, Zap, Download
 } from 'lucide-react';
 import { useThemeStyles } from './DashboardWeb';
 import { AdminPasscodeModal } from './AdminPasscodeModal';
+import { PLAY_STORE_URL, triggerAppUpdateModal, checkAppUpdateStatus } from './UpdatePromptModal';
 
 export type VideoGuideItem = {
   id: number;
@@ -25,6 +26,19 @@ export const AboutWeb: React.FC = () => {
   const navigate = useNavigate();
   const [tapCount, setTapCount] = useState(0);
   const [showAdminModal, setShowAdminModal] = useState(false);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const currentVer = localStorage.getItem('coinburst_installed_ver') || '2.15.0';
+
+  const handleManualCheck = async () => {
+    setCheckingUpdate(true);
+    const res = await checkAppUpdateStatus();
+    setCheckingUpdate(false);
+    if (res.isUpdateAvailable) {
+      triggerAppUpdateModal(res.reason);
+    } else {
+      alert(`CoinBurst is up to date! You are running the latest official version (v${res.currentVersion}).`);
+    }
+  };
 
   const handleLogoTap = () => {
     setTapCount((prev) => {
@@ -167,9 +181,54 @@ export const AboutWeb: React.FC = () => {
         </div>
 
         <div className="shrink-0 relative z-10 flex flex-col items-end gap-2">
-          <span className="px-4 py-2 rounded-xl text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-            Version 2.5 • Official Guide
-          </span>
+          <button
+            onClick={handleManualCheck}
+            disabled={checkingUpdate}
+            className="px-4 py-2 rounded-xl text-xs font-mono font-bold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-colors cursor-pointer flex items-center gap-2"
+          >
+            <Zap className={`w-3.5 h-3.5 ${checkingUpdate ? 'animate-spin' : ''}`} />
+            <span>Installed: v{currentVer} • Check Updates</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Official Google Play Store Release Banner */}
+      <div className={`p-6 sm:p-7 rounded-3xl ${cStyles.cardBg} ${cStyles.shadow} border border-emerald-500/30 relative overflow-hidden flex flex-col sm:flex-row items-center justify-between gap-6`}>
+        <div className="flex items-center gap-4 relative z-10">
+          <div className="p-3.5 rounded-2xl bg-gradient-to-tr from-emerald-500 to-cyan-500 text-black shadow-lg shrink-0">
+            <Download className="w-7 h-7" />
+          </div>
+          <div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1">
+              <Zap className="w-3 h-3 text-emerald-400" /> Official Android Application Release
+            </span>
+            <h3 className="text-lg font-black text-white mt-0.5">
+              CoinBurst Wealth Hub on Google Play
+            </h3>
+            <p className="text-xs text-gray-400 mt-1 max-w-xl leading-relaxed">
+              Verify your application version or update to the latest build on Google Play Store (Package: <span className="font-mono text-emerald-400">com.coinburst.app</span>).
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 shrink-0 relative z-10 w-full sm:w-auto">
+          <button
+            onClick={handleManualCheck}
+            disabled={checkingUpdate}
+            className="flex-1 sm:flex-initial px-4 py-3 rounded-2xl border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 font-bold text-xs uppercase tracking-wider transition-all cursor-pointer text-center"
+          >
+            {checkingUpdate ? 'Checking...' : 'Check Status'}
+          </button>
+          <a
+            href={PLAY_STORE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 sm:flex-initial px-5 py-3 rounded-2xl font-black text-xs uppercase tracking-wider bg-gradient-to-r from-emerald-500 via-emerald-400 to-cyan-400 hover:from-emerald-400 hover:to-cyan-300 text-black shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all transform hover:scale-105"
+          >
+            <Download className="w-4 h-4" />
+            Play Store Page
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
         </div>
       </div>
 

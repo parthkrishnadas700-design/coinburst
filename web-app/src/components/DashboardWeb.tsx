@@ -9,7 +9,7 @@ import {
 import { 
   Plus, Trash2, ArrowUpRight, ArrowDownRight, Search, ChevronDown, 
   TrendingUp, PiggyBank, Bot, Download, Sparkles, Pencil,
-  Upload, Database, RefreshCw, Bell, Clock, ShieldCheck, Camera
+  Upload, Database, RefreshCw, Bell, Clock, ShieldCheck, Camera, Zap, ExternalLink
 } from 'lucide-react';
 import { generateAIResponse } from '../utils/aiCommandEngine';
 import { AboutWeb } from './AboutWeb';
@@ -22,6 +22,7 @@ import { UserTelemetryPanel } from './UserTelemetryPanel';
 import { ReceiptScannerModal } from './ReceiptScannerModal';
 import { BurnRatePredictor } from './BurnRatePredictor';
 import { GroupBillSplitter } from './GroupBillSplitter';
+import { checkAppUpdateStatus, triggerAppUpdateModal, PLAY_STORE_URL } from './UpdatePromptModal';
 import { useScrollLock } from '../shared/useScrollLock';
 import { 
   requestNotificationPermissions, 
@@ -282,6 +283,143 @@ export const LiquidProgressBar: React.FC<{ spent: number; limit: number }> = ({ 
         <div className="text-[11px] text-white/80 font-mono mt-1">
           {def.symbol}{spent.toFixed(0)} / {def.symbol}{limit.toFixed(0)}
         </div>
+      </div>
+    </div>
+  );
+};
+
+export const AppUpdateStatusPanel: React.FC = () => {
+  const cStyles = useThemeStyles();
+  const [updateInfo, setUpdateInfo] = useState<{
+    isUpdateAvailable: boolean;
+    currentVersion: string;
+    latestVersion?: string;
+    reason?: string;
+  }>({
+    isUpdateAvailable: false,
+    currentVersion: localStorage.getItem('coinburst_installed_ver') || '2.15.0',
+    latestVersion: localStorage.getItem('coinburst_installed_ver') || '2.15.0'
+  });
+  const [checking, setChecking] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string>('');
+
+  const runUpdateCheck = async () => {
+    setChecking(true);
+    setStatusMessage('');
+    try {
+      const res = await checkAppUpdateStatus();
+      setUpdateInfo({
+        isUpdateAvailable: res.isUpdateAvailable,
+        currentVersion: res.currentVersion,
+        latestVersion: res.latestVersion || res.currentVersion,
+        reason: res.reason
+      });
+
+      if (res.isUpdateAvailable) {
+        setStatusMessage(`🚀 Update Available! Version ${res.latestVersion || ''} is ready on Google Play Store.`);
+        triggerAppUpdateModal(res.reason || 'New build update available on Play Store');
+      } else {
+        setStatusMessage(`✓ Your app is up to date! (v${res.currentVersion})`);
+      }
+    } catch {
+      setStatusMessage('Unable to verify version sentinel status. Try again.');
+    } finally {
+      setTimeout(() => setChecking(false), 500);
+    }
+  };
+
+  useEffect(() => {
+    runUpdateCheck();
+  }, []);
+
+  return (
+    <div className={`p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow}`}>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div className="flex items-center gap-3">
+          <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+            <Zap className="w-6 h-6 animate-pulse" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-black tracking-wide">App Version & Release Updates</h3>
+              {updateInfo.isUpdateAvailable ? (
+                <span className="px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 text-[10px] font-mono font-bold uppercase border border-cyan-500/40 animate-pulse">
+                  🚀 Update Available
+                </span>
+              ) : (
+                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-mono font-bold uppercase border border-emerald-500/30">
+                  🟢 Up to Date
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Monitor app release status, verify build metadata, or redirect to Google Play Store.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="px-3 py-1.5 rounded-xl font-mono text-xs font-bold bg-white/5 border border-white/10 text-gray-300">
+            Installed: v{updateInfo.currentVersion}
+          </span>
+        </div>
+      </div>
+
+      <div className={`p-5 rounded-xl border border-gray-800/60 ${cStyles.ledgerFeedBg} space-y-4`}>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <div className="text-xs font-bold text-gray-200">
+              Application Build Release: <span className="font-mono text-emerald-400">v{updateInfo.currentVersion}</span> (Package: <span className="font-mono text-cyan-400">com.coinburst.app</span>)
+            </div>
+            <p className="text-xs text-gray-400 mt-1">
+              {updateInfo.isUpdateAvailable
+                ? `A new update (v${updateInfo.latestVersion}) is ready. Click below to update on Google Play Store.`
+                : `Your CoinBurst installation is fully up to date with all security patches and features.`}
+            </p>
+          </div>
+
+          {updateInfo.isUpdateAvailable && (
+            <a
+              href={PLAY_STORE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-400 hover:from-emerald-400 hover:to-cyan-300 text-[#07050F] font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-all shadow-lg shadow-emerald-500/20 shrink-0 cursor-pointer"
+            >
+              <Download className="w-4 h-4" /> Update on Play Store <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          )}
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+          <button
+            onClick={runUpdateCheck}
+            disabled={checking}
+            className={`w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 transition-colors cursor-pointer disabled:opacity-50`}
+          >
+            <RefreshCw className={`w-4 h-4 ${checking ? 'animate-spin' : ''}`} />
+            <span>{checking ? 'Checking Sentinel Server...' : 'Check for Updates Now'}</span>
+          </button>
+
+          <a
+            href={PLAY_STORE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10 transition-colors cursor-pointer"
+          >
+            <span>Visit Google Play Store Listing</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+        </div>
+
+        {statusMessage && (
+          <div className={`p-3 rounded-xl text-xs font-bold flex items-center gap-2 animate-pulse ${
+            updateInfo.isUpdateAvailable
+              ? 'bg-cyan-500/10 border border-cyan-500/30 text-cyan-300'
+              : 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'
+          }`}>
+            <span>{statusMessage}</span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1824,6 +1962,9 @@ export const DashboardWeb: React.FC<{
                     </a>
                   </div>
                 </div>
+
+                {/* 7. App Updates & Version Sentinel Panel */}
+                <AppUpdateStatusPanel />
               </div>
             )}
 

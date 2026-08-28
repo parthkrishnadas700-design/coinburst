@@ -11,6 +11,7 @@ import { auth, handleGoogleRedirectResult } from './shared/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useFinanceStore } from './shared/useFinanceStore';
 import type { Transaction } from './shared/useFinanceStore';
+import coinburstLogo from './assets/coinburst_logo.png';
 
 import { UpdatePromptModal } from './components/UpdatePromptModal';
 import { initNativeListeners, updateNativeStatusBar } from './shared/nativeBridge';
@@ -81,9 +82,9 @@ function MainApp() {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-[#07050F]">
         <div className="flex flex-col items-center gap-6">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#FF007F] via-[#00FF88] to-[#00E5FF] p-[2px] animate-pulse">
-            <div className="w-full h-full bg-[#0B0B0F] rounded-2xl flex items-center justify-center">
-              <span className="font-['Poppins'] font-black text-2xl text-white">CB</span>
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#FF007F] via-[#00FF88] to-[#00E5FF] p-[2px] animate-pulse shadow-[0_0_25px_rgba(0,255,136,0.3)]">
+            <div className="w-full h-full bg-[#0B0B0F] rounded-2xl flex items-center justify-center p-1.5 overflow-hidden">
+              <img src={coinburstLogo} alt="CoinBurst Logo" className="w-full h-full object-contain rounded-xl" />
             </div>
           </div>
           <div className="flex flex-col items-center gap-2">

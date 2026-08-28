@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { signInWithGoogle, signInWithEmail, signUpWithEmail, handleGoogleRedirectResult } from '../shared/firebase';
+import coinburstLogo from '../assets/coinburst_logo.png';
 import { useFinanceStore } from '../shared/useFinanceStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -126,9 +127,9 @@ export const LandingPage: React.FC = () => {
       {/* Header */}
       <header className="max-w-7xl w-full mx-auto px-6 py-6 flex justify-between items-center relative z-10">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#FF007F] via-[#00FF88] to-[#00E5FF] p-[2px]">
-            <div className="w-full h-full bg-[#0B0B0F] rounded-xl flex items-center justify-center">
-              <span className="font-['Poppins'] font-black text-xl text-white">CB</span>
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#FF007F] via-[#00FF88] to-[#00E5FF] p-[2px] shadow-md">
+            <div className="w-full h-full bg-[#0B0B0F] rounded-xl flex items-center justify-center p-1 overflow-hidden">
+              <img src={coinburstLogo} alt="CoinBurst Logo" className="w-full h-full object-contain rounded-lg" />
             </div>
           </div>
           <div>
@@ -221,8 +222,8 @@ export const LandingPage: React.FC = () => {
           </motion.div>
         </div>
 
-        {/* Right Hand: Interactive Authentication Portal - ORDER FIRST ON MOBILE */}
-        <div className="order-first lg:order-last lg:col-span-5 flex justify-center w-full sticky top-24 z-20">
+        {/* Right Hand: Interactive Authentication Portal */}
+        <div className="order-first lg:order-last lg:col-span-5 flex justify-center w-full lg:sticky lg:top-24 z-10">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -440,8 +441,8 @@ export const LandingPage: React.FC = () => {
             className="fixed inset-0 z-[99999] bg-[#07050F]/90 backdrop-blur-2xl flex flex-col items-center justify-center pointer-events-auto cursor-wait select-none p-6 text-center"
           >
             <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-[#FF007F] via-[#00FF88] to-[#00E5FF] p-[3px] animate-pulse mb-6 shadow-[0_0_50px_rgba(0,255,136,0.3)]">
-              <div className="w-full h-full bg-[#0B0B0F] rounded-3xl flex items-center justify-center">
-                <span className="font-['Poppins'] font-black text-3xl text-white">CB</span>
+              <div className="w-full h-full bg-[#0B0B0F] rounded-3xl flex items-center justify-center p-2 overflow-hidden">
+                <img src={coinburstLogo} alt="CoinBurst Logo" className="w-full h-full object-contain rounded-2xl" />
               </div>
             </div>
             

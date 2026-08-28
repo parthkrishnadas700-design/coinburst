@@ -1,4 +1,5 @@
 import React from 'react';
+import coinburstLogo from '../assets/coinburst_logo.png';
 import { ShieldCheck, FileText, ArrowLeft, CheckCircle2, Globe } from 'lucide-react';
 
 export const TermsPage: React.FC = () => {
@@ -9,8 +10,8 @@ export const TermsPage: React.FC = () => {
         <div className="max-w-5xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#FF007F] via-[#00FF88] to-[#00E5FF] p-[2px]">
-              <div className="w-full h-full bg-[#0B0B0F] rounded-xl flex items-center justify-center">
-                <span className="font-['Poppins'] font-black text-sm text-white">CB</span>
+              <div className="w-full h-full bg-[#0B0B0F] rounded-xl flex items-center justify-center p-1 overflow-hidden">
+                <img src={coinburstLogo} alt="CoinBurst Logo" className="w-full h-full object-contain rounded-lg" />
               </div>
             </div>
             <div>

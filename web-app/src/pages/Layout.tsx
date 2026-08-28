@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useFinanceStore } from '../shared/useFinanceStore';
 import { signOutUser } from "../shared/firebase";
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import coinburstLogo from '../assets/coinburst_logo.png';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   BarChart3, ArrowUpRight, PiggyBank, Bot, Settings, Info, LogOut, RefreshCw, X, Flame, Users
@@ -147,8 +148,10 @@ export const Layout: React.FC = () => {
         <div>
           <div className="p-6 border-b border-gray-800/50 flex justify-between items-center gap-3">
             <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/home')}>
-              <div className="w-10 h-10 flex items-center justify-center">
-                <img src="/assets/coinburst_logo.png" alt="CoinBurst Logo" className="w-full h-full object-contain" />
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#FF007F] via-[#00FF88] to-[#00E5FF] p-[2px] shadow-md flex items-center justify-center shrink-0">
+                <div className="w-full h-full bg-[#0B0B0F] rounded-xl flex items-center justify-center p-1 overflow-hidden">
+                  <img src={coinburstLogo} alt="CoinBurst Logo" className="w-full h-full object-contain rounded-lg" />
+                </div>
               </div>
               <div>
                 <h1 className="font-['Poppins'] font-black text-lg tracking-wider">COINBURST</h1>
