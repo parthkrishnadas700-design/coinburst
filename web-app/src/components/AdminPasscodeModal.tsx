@@ -31,7 +31,7 @@ export const AdminPasscodeModal: React.FC<AdminPasscodeModalProps> = ({ isOpen, 
 
     if (!isAdminEmail) {
       setError(true);
-      setErrorMsg('Access Denied: Admin Telemetry Console is strictly restricted to administrator account (parthkrishnadas700@gmail.com).');
+      setErrorMsg('Access Denied: Admin Telemetry Console is restricted to authorized administrator account.');
       triggerHapticNotification('error');
       return;
     }

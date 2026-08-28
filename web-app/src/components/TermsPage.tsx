@@ -153,7 +153,7 @@ export const TermsPage: React.FC = () => {
             </p>
             <ol className="list-decimal list-inside space-y-1.5 text-gray-300 font-semibold pl-2">
               <li>In the CoinBurst app, navigate to <strong>Settings</strong> ➔ <strong>Account & Security</strong> ➔ click <strong>Delete Account & Data</strong>.</li>
-              <li>Alternatively, send an email to <a href="mailto:support@coinburst-5bdc5.web.app" className="text-red-400 underline">support@coinburst-5bdc5.web.app</a> or <a href="mailto:parthkrishnadas700@gmail.com" className="text-red-400 underline">parthkrishnadas700@gmail.com</a> with the subject line <em>"Account Deletion Request"</em> including your registered email address.</li>
+              <li>Alternatively, send an email to <a href="mailto:support@coinburst-5bdc5.web.app" className="text-red-400 underline">support@coinburst-5bdc5.web.app</a> or <a href="mailto:support@coinburst.app" className="text-red-400 underline">support@coinburst.app</a> with the subject line <em>"Account Deletion Request"</em> including your registered email address.</li>
             </ol>
             <p className="text-[11px] text-gray-400 pt-1">
               Deletion requests are processed automatically within 24-48 hours. Once processed, all database nodes linked to your User ID are permanently purged.
