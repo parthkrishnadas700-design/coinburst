@@ -27,6 +27,7 @@ export const UserTelemetryPanel: React.FC = () => {
   const [bannedMap, setBannedMap] = useState<Record<string, boolean>>({});
   const [bannedUsersList, setBannedUsersList] = useState<TelemetryUser[]>([]);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'banned'>('all');
+  const [sortBy, setSortBy] = useState<'lastActive' | 'balance' | 'name' | 'status'>('lastActive');
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const currentUser = useFinanceStore(state => state.user);
@@ -173,7 +174,7 @@ export const UserTelemetryPanel: React.FC = () => {
   }, [bannedMap]);
 
   const filteredUsers = useMemo(() => {
-    return allCombinedUsers.filter(u => {
+    const list = allCombinedUsers.filter(u => {
       const isBanned = !!bannedMap[u.uid];
       if (statusFilter === 'active' && isBanned) return false;
       if (statusFilter === 'banned' && !isBanned) return false;
@@ -185,7 +186,24 @@ export const UserTelemetryPanel: React.FC = () => {
         (u.platform && u.platform.toLowerCase().includes(term))
       );
     });
-  }, [allCombinedUsers, bannedMap, statusFilter, searchTerm]);
+
+    return list.sort((a, b) => {
+      if (sortBy === 'balance') {
+        return (b.totalBalance || 0) - (a.totalBalance || 0);
+      }
+      if (sortBy === 'name') {
+        return a.displayName.localeCompare(b.displayName);
+      }
+      if (sortBy === 'status') {
+        const aBanned = bannedMap[a.uid] ? 1 : 0;
+        const bBanned = bannedMap[b.uid] ? 1 : 0;
+        return bBanned - aBanned;
+      }
+      const aTime = new Date(a.lastActive || 0).getTime();
+      const bTime = new Date(b.lastActive || 0).getTime();
+      return bTime - aTime;
+    });
+  }, [allCombinedUsers, bannedMap, statusFilter, searchTerm, sortBy]);
 
   const androidCount = users.filter(u => u.platform === 'Android App').length;
   const webCount = users.filter(u => u.platform !== 'Android App').length;
@@ -242,49 +260,73 @@ export const UserTelemetryPanel: React.FC = () => {
         </div>
       </div>
 
-      {/* 🟢 Status Sorting & Filtering Options Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6 p-2 rounded-xl bg-black/40 border border-gray-800">
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            type="button"
-            onClick={() => setStatusFilter('all')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
-              statusFilter === 'all'
-                ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
-                : 'text-gray-400 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            All Users ({allCombinedUsers.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setStatusFilter('active')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
-              statusFilter === 'active'
-                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20'
-                : 'text-emerald-400 hover:bg-emerald-500/10'
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            Active Users ({activeUserCount})
-          </button>
-          <button
-            type="button"
-            onClick={() => setStatusFilter('banned')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
-              statusFilter === 'banned'
-                ? 'bg-red-600 text-white shadow-lg shadow-red-500/20'
-                : 'text-red-400 hover:bg-red-500/10'
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-red-400" />
-            Removed / Revoked ({bannedUserCount})
-          </button>
+      {/* 👑 Status Sorting & Filtering Control Bar */}
+      <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-950/60 via-indigo-950/60 to-slate-900/80 border border-purple-500/40 shadow-xl mb-6 space-y-3">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <span className="text-xs font-black uppercase tracking-wider text-purple-400 flex items-center gap-1.5">
+            <Users className="w-4 h-4" /> Filter & Sort User Access List
+          </span>
+
+          <div className="flex items-center gap-2 text-xs font-bold text-gray-300">
+            <span>Sort By:</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="px-3 py-1.5 rounded-xl bg-black/60 border border-purple-500/40 text-white text-xs font-bold focus:outline-none cursor-pointer"
+            >
+              <option value="lastActive">⏱️ Last Active Time</option>
+              <option value="balance">💰 Total Balance (High to Low)</option>
+              <option value="name">🔤 Name (A - Z)</option>
+              <option value="status">🛑 Revoked / Banned First</option>
+            </select>
+          </div>
         </div>
 
-        <span className="text-[11px] font-bold text-gray-400">
-          Showing <strong className="text-white">{filteredUsers.length}</strong> user records
-        </span>
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setStatusFilter('all')}
+              className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 ${
+                statusFilter === 'all'
+                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30 border border-purple-400'
+                  : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" /> All Users ({allCombinedUsers.length})
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setStatusFilter('active')}
+              className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 ${
+                statusFilter === 'active'
+                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/30 border border-emerald-400'
+                  : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30'
+              }`}
+            >
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+              🟢 Active Users ({activeUserCount})
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setStatusFilter('banned')}
+              className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 ${
+                statusFilter === 'banned'
+                  ? 'bg-red-600 text-white shadow-lg shadow-red-500/30 border border-red-400'
+                  : 'bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/30'
+              }`}
+            >
+              <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
+              🛑 Removed / Revoked ({bannedUserCount})
+            </button>
+          </div>
+
+          <span className="text-[11px] font-bold text-gray-400">
+            Showing <strong className="text-white">{filteredUsers.length}</strong> matching user records
+          </span>
+        </div>
       </div>
 
       {/* 📢 Admin Remote Broadcast Publisher */}
