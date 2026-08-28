@@ -18,6 +18,7 @@ import { WalletSlidebar } from './WalletSlidebar';
 import { TermsModal } from './TermsModal';
 import { ProfitLossWidget } from './ProfitLossWidget';
 import { SavingsBadgesWidget } from './SavingsBadgesWidget';
+import { triggerHapticNotification, showNativeToast } from '../shared/nativeBridge';
 import { UserTelemetryPanel } from './UserTelemetryPanel';
 import { ReceiptScannerModal } from './ReceiptScannerModal';
 import { BurnRatePredictor } from './BurnRatePredictor';
@@ -787,14 +788,24 @@ export const DashboardWeb: React.FC<{
     }
   };
 
-  // Add Account handler
+  // ── Listen to custom open add wallet trigger ──
+  useEffect(() => {
+    const handleOpenAddWallet = () => {
+      setShowAddAccount(true);
+    };
+    window.addEventListener('coinburst_open_add_wallet', handleOpenAddWallet);
+    return () => window.removeEventListener('coinburst_open_add_wallet', handleOpenAddWallet);
+  }, []);
+
+  // Add Account / Wallet Node handler
   const handleAddAccount = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newAccName.trim() || !newAccBalance) return;
+    if (!newAccName.trim()) return;
+    const initialBalance = newAccBalance ? parseFloat(newAccBalance) : 0;
     addAccount({
       name: newAccName.trim(),
       type: newAccType,
-      balance: parseFloat(newAccBalance),
+      balance: isNaN(initialBalance) ? 0 : initialBalance,
       color: newAccColor,
     });
     setNewAccName('');
@@ -802,19 +813,24 @@ export const DashboardWeb: React.FC<{
     setNewAccColor('#10B981');
     setNewAccType('cash');
     setShowAddAccount(false);
+    triggerHapticNotification('success');
+    showNativeToast('Wallet Node Created Successfully!');
   };
 
   // Add Budget handler
   const handleAddBudget = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newBudgetLimit || parseFloat(newBudgetLimit) <= 0) return;
+    const limitNum = parseFloat(newBudgetLimit);
+    if (isNaN(limitNum) || limitNum <= 0) return;
     addBudget({
       category: newBudgetCategory,
-      limit: parseFloat(newBudgetLimit),
+      limit: limitNum,
       month: newBudgetMonth,
     });
     setNewBudgetLimit('');
     setShowAddBudget(false);
+    triggerHapticNotification('success');
+    showNativeToast('Category Budget Configured!');
   };
 
   const selectedAccount = accounts.find(a => a.id === selectedAccountId);
@@ -2143,7 +2159,7 @@ export const DashboardWeb: React.FC<{
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Initial Balance</label>
                     <input
-                      required type="number" step="0.01"
+                      type="number" step="0.01"
                       value={newAccBalance} onChange={e => setNewAccBalance(e.target.value)}
                       placeholder="0.00"
                       className={`w-full px-4 py-3 rounded-xl focus:outline-none font-mono ${cStyles.input}`}
