@@ -33,16 +33,16 @@ export const sanitizeText = (input: unknown, maxLength: number = 250): string =>
 export const validateAmount = (value: unknown, allowNegative: boolean = false): number => {
   if (typeof value === 'number') {
     if (isNaN(value) || !isFinite(value)) return 0;
-    if (!allowNegative && value < 0) return 0;
-    // Cap at 1 billion to prevent numeric overflow
-    return Math.min(Math.abs(value), 1_000_000_000);
+    let num = value;
+    if (!allowNegative && num < 0) num = Math.abs(num);
+    return Math.min(Math.max(num, -1_000_000_000), 1_000_000_000);
   }
 
   if (typeof value === 'string') {
-    const parsed = parseFloat(value);
+    let parsed = parseFloat(value);
     if (isNaN(parsed) || !isFinite(parsed)) return 0;
-    if (!allowNegative && parsed < 0) return 0;
-    return Math.min(Math.abs(parsed), 1_000_000_000);
+    if (!allowNegative && parsed < 0) parsed = Math.abs(parsed);
+    return Math.min(Math.max(parsed, -1_000_000_000), 1_000_000_000);
   }
 
   return 0;

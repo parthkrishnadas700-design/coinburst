@@ -1580,7 +1580,13 @@ export const DashboardWeb: React.FC<{
                             </div>
                           </div>
                           <button
-                            onClick={() => deleteAccount(acc.id)}
+                            onClick={() => {
+                              if (window.confirm(`Are you sure you want to delete wallet "${acc.name}"?`)) {
+                                deleteAccount(acc.id);
+                                triggerHapticNotification('warning');
+                                showNativeToast(`Wallet ${acc.name} deleted.`);
+                              }
+                            }}
                             className="p-1.5 text-gray-500 hover:text-red-400 transition-colors cursor-pointer"
                             title="Delete Wallet"
                           >
