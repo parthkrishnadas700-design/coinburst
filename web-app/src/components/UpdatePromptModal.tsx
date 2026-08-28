@@ -22,7 +22,7 @@ export const checkAppUpdateStatus = async (): Promise<{
   buildTime?: number | string;
   reason?: string;
 }> => {
-  const currentVersion = localStorage.getItem('coinburst_installed_ver') || '2.31.0';
+  const currentVersion = localStorage.getItem('coinburst_installed_ver') || '2.32.0';
   const currentBuildTime = localStorage.getItem('coinburst_installed_build_time');
 
   try {
@@ -43,9 +43,9 @@ export const checkAppUpdateStatus = async (): Promise<{
         return {
           isUpdateAvailable: true,
           currentVersion,
-          latestVersion: data.version || '2.31.0',
+          latestVersion: data.version || '2.32.0',
           buildTime: data.buildTime,
-          reason: `Build v${data.version || '2.31.0'} Code ${data.versionCode || 44}`
+          reason: `Build v${data.version || '2.32.0'} Code ${data.versionCode || 45}`
         };
       }
     }
@@ -132,7 +132,7 @@ export const UpdatePromptModal: React.FC = () => {
                 localStorage.setItem('coinburst_update_notified_ver', data.version);
                 console.log('[AutoUpdate] 1-Time Update Prompt Triggered:', data.version);
                 setShowModal(true);
-                setUpdateReason(`Build v${data.version} (Code ${data.versionCode || 44}) deployed`);
+                setUpdateReason(`Build v${data.version} (Code ${data.versionCode || 45}) deployed`);
               }
             } else {
               localStorage.setItem('coinburst_installed_ver', data.version);
@@ -172,7 +172,7 @@ export const UpdatePromptModal: React.FC = () => {
             localStorage.setItem('coinburst_update_notified_ver', remoteVer);
             console.log('[FirebaseAutoUpdate] Live WebSocket 1-Time update prompt triggered:', remoteVer);
             setShowModal(true);
-            setUpdateReason(`Live Broadcast v${remoteVer || '2.31.0'} active`);
+            setUpdateReason(`Live Broadcast v${remoteVer || '2.32.0'} active`);
           }
         }
       }

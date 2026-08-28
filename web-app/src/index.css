@@ -2,6 +2,14 @@
 
 @import "tailwindcss";
 
+html {
+  scroll-behavior: smooth !important;
+}
+
+*, ::before, ::after {
+  scroll-behavior: smooth;
+}
+
 html, body, #root {
   margin: 0;
   padding: 0;
@@ -13,6 +21,16 @@ html, body, #root {
   color: #ffffff;
   overflow-x: hidden;
   -webkit-tap-highlight-color: transparent;
+  scroll-behavior: smooth !important;
+}
+
+body, div, main, section, nav, select, ul, article, aside {
+  -webkit-overflow-scrolling: touch;
+}
+
+.overflow-y-auto, .overflow-x-auto, .overflow-auto {
+  scroll-behavior: smooth !important;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Safe Area Inset Helpers for Notch & Gesture Bars */
