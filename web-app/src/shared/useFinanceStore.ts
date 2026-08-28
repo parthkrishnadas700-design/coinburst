@@ -209,24 +209,26 @@ const saveStateToFirebase = (
     .catch(err => console.error('[CoinBurst] Firebase sync failed:', err));
 
   // 👑 Live Admin User Telemetry
-  if (userProfile) {
-    const telemetryRef = ref(database, `user_telemetry/${uid}`);
-    const totalBalance = accounts.reduce((sum, a) => sum + a.balance, 0);
-    const isAndroid = typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform();
-    firebaseUpdate(telemetryRef, {
-      uid: userProfile.uid,
-      displayName: userProfile.displayName || 'CoinBurst User',
-      email: userProfile.email || 'Registered User',
-      photoURL: userProfile.photoURL || '',
-      theme,
-      currency,
-      accountCount: accounts.length,
-      txCount: transactions.length,
-      totalBalance,
-      lastActive: new Date().toISOString(),
-      platform: isAndroid ? 'Android App' : 'Web Browser'
-    }).catch(() => {});
-  }
+  const telemetryRef = ref(database, `user_telemetry/${uid}`);
+  const totalBalance = accounts.reduce((sum, a) => sum + a.balance, 0);
+  const isAndroid = typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform();
+
+  const telemetryPayload: Record<string, any> = {
+    uid: userProfile?.uid || uid,
+    theme,
+    currency,
+    accountCount: accounts.length,
+    txCount: transactions.length,
+    totalBalance,
+    lastActive: new Date().toISOString(),
+    platform: isAndroid ? 'Android App' : 'Web Browser'
+  };
+
+  if (userProfile?.displayName) telemetryPayload.displayName = userProfile.displayName;
+  if (userProfile?.email) telemetryPayload.email = userProfile.email;
+  if (userProfile?.photoURL) telemetryPayload.photoURL = userProfile.photoURL;
+
+  firebaseUpdate(telemetryRef, telemetryPayload).catch(() => {});
 };
 
 let activeFirebaseUnsubscribe: (() => void) | null = null;
@@ -633,16 +635,31 @@ export const useFinanceStore = create<FinanceState>()(
                   loading: false,
                 }));
                 console.log('[CoinBurst] Live cross-platform real-time sync received from Firebase.');
+
+                // 👑 Sync loaded accounts & transactions counts to Admin Telemetry
+                const telemetryRef = ref(database, `user_telemetry/${user.uid}`);
+                const loadedBalance = loadedAccounts.reduce((sum, a) => sum + a.balance, 0);
+                firebaseUpdate(telemetryRef, {
+                  accountCount: loadedAccounts.length,
+                  txCount: loadedTransactions.length,
+                  totalBalance: loadedBalance,
+                  lastActive: new Date().toISOString()
+                }).catch(() => {});
               }
             });
 
             // Log user to Admin Telemetry directory
             const telemetryRef = ref(database, `user_telemetry/${user.uid}`);
+            const state = get();
+            const currBalance = state.accounts.reduce((sum, a) => sum + a.balance, 0);
             firebaseUpdate(telemetryRef, {
               uid: user.uid,
               displayName: user.displayName || 'CoinBurst User',
               email: user.email || 'Registered User',
               photoURL: user.photoURL || '',
+              accountCount: state.accounts.length,
+              txCount: state.transactions.length,
+              totalBalance: currBalance,
               lastActive: new Date().toISOString(),
               platform: typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform() ? 'Android App' : 'Web Browser'
             }).catch(() => {});
