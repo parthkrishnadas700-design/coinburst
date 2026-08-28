@@ -21,6 +21,7 @@ import { ProfitLossWidget } from './ProfitLossWidget';
 import { SavingsBadgesWidget } from './SavingsBadgesWidget';
 import { triggerHapticNotification, showNativeToast } from '../shared/nativeBridge';
 import { UserTelemetryPanel } from './UserTelemetryPanel';
+import { AdminPasscodeModal } from './AdminPasscodeModal';
 import { ReceiptScannerModal } from './ReceiptScannerModal';
 import { BurnRatePredictor } from './BurnRatePredictor';
 import { GroupBillSplitter } from './GroupBillSplitter';
@@ -637,22 +638,26 @@ export const DashboardWeb: React.FC<{
   const [isManualSyncing, setIsManualSyncing] = useState(false);
   const [notifPermState, setNotifPermState] = useState<string>('Checking...');
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showAdminPasscodeModal, setShowAdminPasscodeModal] = useState(false);
+
+  const prevActivePageRef = useRef(activePage);
 
   useEffect(() => {
-    // 🔒 Auto-lock Admin Telemetry Console whenever leaving Settings tab or switching page slides
-    if (activePage !== 'settings') {
+    // 🔒 Auto-lock Admin Telemetry Console ONLY when transitioning away from Settings to another page slide
+    if (prevActivePageRef.current === 'settings' && activePage !== 'settings') {
       useFinanceStore.getState().setIsAdminUnlocked(false);
-    } else {
+    }
+    prevActivePageRef.current = activePage;
+
+    if (activePage === 'settings') {
       checkNotificationPermissions().then((granted) => {
         setNotifPermState(granted ? 'Granted' : 'Not Granted');
       });
+      if (isAdminUnlocked) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     }
-
-    return () => {
-      // 🔒 Auto-lock Admin Console on unmount / slide leave
-      useFinanceStore.getState().setIsAdminUnlocked(false);
-    };
-  }, [activePage]);
+  }, [activePage, isAdminUnlocked]);
 
   // Profile editing
   const [editName, setEditName] = useState('');
@@ -1555,8 +1560,30 @@ export const DashboardWeb: React.FC<{
 
             {activePage === 'settings' && (
               <div className="space-y-8">
-                {/* 👑 Admin User Telemetry Panel (Only visible when unlocked via secret 5-tap passcode) */}
+                {/* 👑 Admin User Telemetry Panel & Quick Unlock Action */}
                 {isAdminUnlocked && <UserTelemetryPanel />}
+
+                {user?.email?.toLowerCase() === 'parthkrishnadas700@gmail.com' && !isAdminUnlocked && (
+                  <div className="p-5 rounded-2xl bg-gradient-to-r from-purple-900/30 via-indigo-900/30 to-purple-900/30 border border-purple-500/40 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-11 h-11 rounded-2xl bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center justify-center font-bold text-xl shrink-0">
+                        👑
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-black text-white tracking-wide">Administrator Controls Available</h4>
+                        <p className="text-xs text-purple-200 mt-0.5">
+                          Unlock live user telemetry, active vs revoked user list, and remote broadcast.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowAdminPasscodeModal(true)}
+                      className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-xs uppercase tracking-wider transition-all shadow-lg cursor-pointer shrink-0"
+                    >
+                      Unlock Admin Console
+                    </button>
+                  </div>
+                )}
 
                 {/* 0. Wallet Nodes & Accounts Panel */}
                 <div className={`p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow}`}>
@@ -2316,6 +2343,15 @@ export const DashboardWeb: React.FC<{
 
       {/* 📷 AI Smart Receipt & Bill Scanner Modal */}
       <ReceiptScannerModal isOpen={showReceiptScanner} onClose={() => setShowReceiptScanner(false)} />
+
+      {/* 👑 Admin Passcode Modal */}
+      <AdminPasscodeModal
+        isOpen={showAdminPasscodeModal}
+        onClose={() => setShowAdminPasscodeModal(false)}
+        onSuccess={() => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+      />
     </div>
   );
 };
