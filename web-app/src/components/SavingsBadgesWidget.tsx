@@ -67,11 +67,11 @@ export const SavingsBadgesWidget: React.FC = () => {
         {/* Progress to next target badge */}
         {nextTargetBadge && (
           <div className="space-y-1.5">
-            <div className="flex justify-between text-[11px] font-mono">
-              <span className="text-gray-400 flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-emerald-400" /> Next: <strong className="text-white">{nextTargetBadge.name}</strong>
+            <div className="flex items-center justify-between text-[11px] font-mono min-w-0">
+              <span className="text-gray-400 flex items-center gap-1 min-w-0 truncate">
+                <Sparkles className="w-3 h-3 text-emerald-400 shrink-0" /> Next: <strong className="text-white truncate">{nextTargetBadge.name}</strong>
               </span>
-              <span className="text-emerald-400 font-bold">{nextTargetBadge.progress}%</span>
+              <span className="text-emerald-400 font-bold shrink-0 ml-2">{nextTargetBadge.progress}%</span>
             </div>
             <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden border border-white/5">
               <div

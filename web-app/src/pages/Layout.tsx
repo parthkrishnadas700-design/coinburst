@@ -138,29 +138,30 @@ export const Layout: React.FC = () => {
 
       {/* Sidebar */}
       <aside className={`
-        fixed top-0 bottom-0 left-0 z-50 w-64 border-r
+        fixed top-0 bottom-0 left-0 z-50 w-72 sm:w-80 max-w-[85vw] border-r
         ${theme === 'cyberpunk' ? 'border-[#FF007F]' : 'border-gray-800'}
         flex flex-col justify-between ${cStyles.cardBg}
         transition-transform duration-300 ease-in-out
         ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         md:translate-x-0 md:static md:z-10 md:h-screen
       `}>
-        <div>
-          <div className="p-6 border-b border-gray-800/50 flex justify-between items-center gap-3">
-            <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/home')}>
+        <div className="flex-1 flex flex-col min-h-0 overflow-y-auto no-scrollbar">
+          <div className="pt-[max(env(safe-area-inset-top),1.25rem)] pb-4 px-5 border-b border-gray-800/50 flex justify-between items-center gap-3 shrink-0">
+            <div className="flex items-center gap-3 cursor-pointer" onClick={() => { navigate('/home'); setIsMobileSidebarOpen(false); }}>
               <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#FF007F] via-[#00FF88] to-[#00E5FF] p-[2px] shadow-md flex items-center justify-center shrink-0">
                 <div className="w-full h-full bg-[#0B0B0F] rounded-xl flex items-center justify-center p-1 overflow-hidden">
                   <img src={coinburstLogo} alt="CoinBurst Logo" className="w-full h-full object-contain rounded-lg" />
                 </div>
               </div>
-              <div>
-                <h1 className="font-['Poppins'] font-black text-lg tracking-wider">COINBURST</h1>
-                <span className="font-['Manrope'] text-[9px] tracking-widest text-emerald-400 font-semibold uppercase">Wealth Hub</span>
+              <div className="min-w-0">
+                <h1 className="font-['Poppins'] font-black text-lg tracking-wider truncate">COINBURST</h1>
+                <span className="font-['Manrope'] text-[9px] tracking-widest text-emerald-400 font-semibold uppercase block truncate">Wealth Hub</span>
               </div>
             </div>
             <button 
               onClick={() => setIsMobileSidebarOpen(false)}
-              className="p-1 rounded-lg text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 md:hidden cursor-pointer"
+              className="p-2 rounded-xl text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 md:hidden cursor-pointer shrink-0"
+              title="Close Menu"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -168,7 +169,7 @@ export const Layout: React.FC = () => {
             </button>
           </div>
 
-          <nav className="mt-6 px-4 space-y-2">
+          <nav className="mt-4 px-3 space-y-1.5 flex-1">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.id || (item.id === '/home' && location.pathname === '/');
@@ -179,31 +180,31 @@ export const Layout: React.FC = () => {
                     navigate(item.id);
                     setIsMobileSidebarOpen(false);
                   }}
-                  className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-300 cursor-pointer ${
+                  className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-300 cursor-pointer ${
                     isActive ? cStyles.navActive : cStyles.navInactive
                   }`}
                 >
-                  <Icon className="w-5 h-5" />
-                  <span>{item.label}</span>
+                  <Icon className="w-5 h-5 shrink-0" />
+                  <span className="truncate">{item.label}</span>
                 </button>
               );
             })}
           </nav>
         </div>
 
-        <div className="p-4 border-t border-gray-800/50 flex items-center gap-3">
+        <div className="p-4 pt-3 pb-[max(env(safe-area-inset-bottom),1.25rem)] border-t border-gray-800/50 flex items-center gap-2.5 shrink-0">
           {user && (
             <>
               {user.photoURL ? (
-                <img src={user.photoURL} alt={user.displayName} className="w-10 h-10 rounded-full shadow-md object-cover" />
+                <img src={user.photoURL} alt={user.displayName} className="w-9 h-9 rounded-full shadow-md object-cover shrink-0" />
               ) : (
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-white font-black shadow-md">
-                  {user.displayName.substring(0, 2).toUpperCase()}
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-white font-black text-xs shadow-md shrink-0">
+                  {user.displayName ? user.displayName.substring(0, 2).toUpperCase() : 'CB'}
                 </div>
               )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <p className="text-sm font-bold truncate">{user.displayName}</p>
+                  <p className="text-xs font-bold truncate text-white">{user.displayName || 'Wealth Builder'}</p>
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" title="Cloud Synced Live" />
                 </div>
                 <p className="text-[10px] text-gray-400 truncate">{user.email}</p>
@@ -212,14 +213,14 @@ export const Layout: React.FC = () => {
                 onClick={handleSidebarSync}
                 disabled={isSyncing || loading}
                 title="Sync Full Data with Firebase"
-                className="text-gray-400 hover:text-emerald-400 transition-colors cursor-pointer p-1.5 rounded-lg hover:bg-emerald-500/10 disabled:opacity-50"
+                className="text-gray-400 hover:text-emerald-400 transition-colors cursor-pointer p-1.5 rounded-lg hover:bg-emerald-500/10 disabled:opacity-50 shrink-0"
               >
                 <RefreshCw className={`w-4 h-4 ${isSyncing || loading ? 'animate-spin text-emerald-400' : ''}`} />
               </button>
               <button
                 onClick={() => setShowLogoutModal(true)}
                 title="Sign Out"
-                className="text-gray-400 hover:text-red-400 transition-colors cursor-pointer p-1.5 rounded-lg hover:bg-red-500/10"
+                className="text-gray-400 hover:text-red-400 transition-colors cursor-pointer p-1.5 rounded-lg hover:bg-red-500/10 shrink-0"
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -230,7 +231,7 @@ export const Layout: React.FC = () => {
 
       <div className="flex-1 flex flex-col min-w-0">
         <AdminBroadcastBanner />
-        <div className={`md:hidden flex items-center justify-between px-4 py-3 border-b ${theme === 'cyberpunk' ? 'border-[#FF007F]' : 'border-gray-800'} ${cStyles.cardBg} sticky top-0 z-20 w-full`}>
+        <div className={`md:hidden flex items-center justify-between px-4 pt-[max(env(safe-area-inset-top),0.75rem)] pb-3 border-b ${theme === 'cyberpunk' ? 'border-[#FF007F]' : 'border-gray-800'} ${cStyles.cardBg} sticky top-0 z-20 w-full`}>
           <div className="flex items-center gap-3">
             <button 
               onClick={() => setIsMobileSidebarOpen(true)}
@@ -246,7 +247,7 @@ export const Layout: React.FC = () => {
           </div>
         </div>
 
-        <main className="flex-1 p-4 md:p-8 overflow-y-auto w-full relative z-10">
+        <main className="flex-1 p-4 sm:p-6 md:p-8 pb-[max(env(safe-area-inset-bottom),2rem)] overflow-y-auto w-full relative z-10">
           <Outlet />
         </main>
       </div>

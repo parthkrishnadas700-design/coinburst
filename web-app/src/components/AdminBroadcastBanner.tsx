@@ -49,7 +49,7 @@ export const AdminBroadcastBanner: React.FC = () => {
 
   return (
     <div className="w-full relative z-40 animate-slideDown">
-      <div className={`w-full py-3 px-4 sm:px-6 bg-gradient-to-r ${bgGradient} text-white shadow-xl border-b flex flex-col sm:flex-row items-center justify-between gap-3 text-xs sm:text-sm font-medium`}>
+      <div className={`w-full pt-[max(env(safe-area-inset-top),0.75rem)] pb-3 px-4 sm:px-6 bg-gradient-to-r ${bgGradient} text-white shadow-xl border-b flex flex-col sm:flex-row items-center justify-between gap-3 text-xs sm:text-sm font-medium`}>
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <div className="p-1.5 rounded-xl bg-white/20 shrink-0 animate-bounce">
             <IconComponent className="w-5 h-5 text-white" />
