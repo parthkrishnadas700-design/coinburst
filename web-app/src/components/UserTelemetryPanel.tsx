@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { database } from '../shared/firebase';
-import { ref, onValue, set as firebaseSet, update as firebaseUpdate } from 'firebase/database';
-import { Users, Smartphone, Globe, RefreshCw, Search, Clock, Megaphone, Send, Trash2 } from 'lucide-react';
+import { ref, onValue, set as firebaseSet, update as firebaseUpdate, remove as firebaseRemove } from 'firebase/database';
+import { Users, Smartphone, Globe, RefreshCw, Search, Clock, Megaphone, Send, Trash2, UserX, CheckCircle2 } from 'lucide-react';
 import { useThemeStyles } from './DashboardWeb';
 import { useFinanceStore } from '../shared/useFinanceStore';
 import { triggerHapticNotification, showNativeToast } from '../shared/nativeBridge';
@@ -18,11 +18,13 @@ export interface TelemetryUser {
   totalBalance?: number;
   lastActive?: string;
   platform?: string;
+  status?: string;
 }
 
 export const UserTelemetryPanel: React.FC = () => {
   const cStyles = useThemeStyles();
   const [users, setUsers] = useState<TelemetryUser[]>([]);
+  const [bannedMap, setBannedMap] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const currentUser = useFinanceStore(state => state.user);
@@ -30,7 +32,7 @@ export const UserTelemetryPanel: React.FC = () => {
   const transactions = useFinanceStore(state => state.transactions);
 
   useEffect(() => {
-    // 0. Immedately push current user to telemetry node
+    // 0. Immediately push current user to telemetry node if not banned
     if (currentUser) {
       const telemetryRef = ref(database, `user_telemetry/${currentUser.uid}`);
       const totalBalance = accounts.reduce((sum, a) => sum + a.balance, 0);
@@ -50,14 +52,12 @@ export const UserTelemetryPanel: React.FC = () => {
 
     // 1. Listen to user_telemetry node
     const telemetryRef = ref(database, 'user_telemetry');
-
     const unsubscribeTelemetry = onValue(telemetryRef, (snapshot) => {
       const val = snapshot.val();
       if (val) {
         const userList: TelemetryUser[] = Object.values(val);
         setUsers(userList);
       } else if (currentUser) {
-        // Show current user as fallback if database node is empty
         const totalBalance = accounts.reduce((sum, a) => sum + a.balance, 0);
         const isAndroid = typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform();
         setUsers([{
@@ -75,8 +75,68 @@ export const UserTelemetryPanel: React.FC = () => {
       setLoading(false);
     });
 
-    return () => unsubscribeTelemetry();
+    // 2. Listen to banned_users node in Realtime DB
+    const bannedRef = ref(database, 'banned_users');
+    const unsubscribeBanned = onValue(bannedRef, (snapshot) => {
+      const val = snapshot.val();
+      if (val) {
+        const map: Record<string, boolean> = {};
+        Object.keys(val).forEach((uid) => {
+          if (val[uid]?.banned) {
+            map[uid] = true;
+          }
+        });
+        setBannedMap(map);
+      } else {
+        setBannedMap({});
+      }
+    });
+
+    return () => {
+      unsubscribeTelemetry();
+      unsubscribeBanned();
+    };
   }, [currentUser, accounts, transactions]);
+
+  // Admin Action: Remove & Revoke User Access
+  const handleRemoveUser = async (targetUser: TelemetryUser) => {
+    if (window.confirm(`Are you sure you want to REMOVE and REVOKE access for user:\n\n${targetUser.displayName} (${targetUser.email})\n\nThey will be forcibly logged out and banned from CoinBurst.`)) {
+      try {
+        // Mark as banned in Firebase banned_users node
+        const userBannedRef = ref(database, `banned_users/${targetUser.uid}`);
+        await firebaseSet(userBannedRef, {
+          banned: true,
+          bannedAt: new Date().toISOString(),
+          displayName: targetUser.displayName,
+          email: targetUser.email,
+          revokedBy: currentUser?.email || 'Admin'
+        });
+
+        // Remove from active user_telemetry node
+        const telemetryUserRef = ref(database, `user_telemetry/${targetUser.uid}`);
+        await firebaseRemove(telemetryUserRef);
+
+        triggerHapticNotification('success');
+        showNativeToast(`User ${targetUser.displayName} access revoked!`);
+      } catch (err) {
+        console.error('User removal error:', err);
+        showNativeToast('User removal error');
+      }
+    }
+  };
+
+  // Admin Action: Restore / Unban User Access
+  const handleRestoreUser = async (targetUser: TelemetryUser) => {
+    try {
+      const userBannedRef = ref(database, `banned_users/${targetUser.uid}`);
+      await firebaseRemove(userBannedRef);
+
+      triggerHapticNotification('success');
+      showNativeToast(`User ${targetUser.displayName} access restored!`);
+    } catch (err) {
+      console.error('User restore error:', err);
+    }
+  };
 
   const filteredUsers = users.filter(u => 
     u.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -113,7 +173,7 @@ export const UserTelemetryPanel: React.FC = () => {
               </span>
             </div>
             <p className="text-xs text-gray-400 mt-0.5">
-              Live monitoring of users connected to CoinBurst web & mobile apps.
+              Live monitoring, access control, user revocation & remote broadcast.
             </p>
           </div>
         </div>
@@ -187,59 +247,92 @@ export const UserTelemetryPanel: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-3">
-          {filteredUsers.map((u) => (
-            <div
-              key={u.uid}
-              className={`p-4 rounded-xl border transition-all duration-300 hover:border-purple-500/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 ${cStyles.ledgerFeedBg}`}
-            >
-              {/* User Avatar & Info */}
-              <div className="flex items-center gap-3 min-w-0">
-                {u.photoURL ? (
-                  <img
-                    src={u.photoURL}
-                    alt={u.displayName}
-                    className="w-11 h-11 rounded-full object-cover border-2 border-purple-500/40 shrink-0"
-                  />
-                ) : (
-                  <div className="w-11 h-11 rounded-full bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white font-black text-sm border-2 border-purple-500/40 shrink-0">
-                    {u.displayName ? u.displayName.substring(0, 2).toUpperCase() : 'U'}
-                  </div>
-                )}
+          {filteredUsers.map((u) => {
+            const isUserBanned = Boolean(bannedMap[u.uid]);
+            return (
+              <div
+                key={u.uid}
+                className={`p-4 rounded-xl border transition-all duration-300 hover:border-purple-500/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 ${
+                  isUserBanned ? 'bg-red-950/20 border-red-500/40' : cStyles.ledgerFeedBg
+                }`}
+              >
+                {/* User Avatar & Info */}
+                <div className="flex items-center gap-3 min-w-0">
+                  {u.photoURL ? (
+                    <img
+                      src={u.photoURL}
+                      alt={u.displayName}
+                      className="w-11 h-11 rounded-full object-cover border-2 border-purple-500/40 shrink-0"
+                    />
+                  ) : (
+                    <div className="w-11 h-11 rounded-full bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white font-black text-sm border-2 border-purple-500/40 shrink-0">
+                      {u.displayName ? u.displayName.substring(0, 2).toUpperCase() : 'U'}
+                    </div>
+                  )}
 
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-bold text-sm text-gray-200 truncate">{u.displayName}</h4>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1 shrink-0 ${
-                      u.platform === 'Android App' 
-                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                        : 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30'
-                    }`}>
-                      {u.platform === 'Android App' ? <Smartphone className="w-3 h-3" /> : <Globe className="w-3 h-3" />}
-                      {u.platform || 'Web App'}
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-bold text-sm text-gray-200 truncate">{u.displayName}</h4>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1 shrink-0 ${
+                        u.platform === 'Android App' 
+                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                          : 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30'
+                      }`}>
+                        {u.platform === 'Android App' ? <Smartphone className="w-3 h-3" /> : <Globe className="w-3 h-3" />}
+                        {u.platform || 'Web App'}
+                      </span>
+
+                      {isUserBanned && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-red-500/20 text-red-400 border border-red-500/40 shrink-0 animate-pulse">
+                          ⛔ Access Revoked
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-400 truncate">{u.email}</p>
+                  </div>
+                </div>
+
+                {/* Stats, Last Active & Admin Actions */}
+                <div className="flex flex-wrap items-center gap-4 text-xs shrink-0 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 pt-3 md:pt-0 border-gray-800/60">
+                  <div className="text-left md:text-right">
+                    <span className="text-[10px] uppercase font-bold text-gray-400 block">Ledger Stats</span>
+                    <span className="font-mono font-bold text-gray-200">
+                      {u.accountCount || 0} Wallets • {u.txCount || 0} Txns
                     </span>
                   </div>
-                  <p className="text-xs text-gray-400 truncate">{u.email}</p>
+
+                  <div className="text-left md:text-right">
+                    <span className="text-[10px] uppercase font-bold text-gray-400 block">Last Active</span>
+                    <span className="font-mono text-purple-400 font-medium flex items-center gap-1">
+                      <Clock className="w-3 h-3 inline" /> {formatDate(u.lastActive)}
+                    </span>
+                  </div>
+
+                  {/* Admin User Control Buttons */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    {isUserBanned ? (
+                      <button
+                        onClick={() => handleRestoreUser(u)}
+                        className="px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-400 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                        title="Restore User Access"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Restore Access
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleRemoveUser(u)}
+                        disabled={currentUser?.uid === u.uid}
+                        className="px-3 py-1.5 rounded-xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/40 text-red-400 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                        title={currentUser?.uid === u.uid ? "Cannot revoke your own active admin session" : "Forcibly Revoke Access & Remove User"}
+                      >
+                        <UserX className="w-3.5 h-3.5" /> Remove User
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-
-              {/* Stats & Last Active */}
-              <div className="flex flex-wrap items-center gap-4 text-xs shrink-0 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 pt-3 md:pt-0 border-gray-800/60">
-                <div className="text-left md:text-right">
-                  <span className="text-[10px] uppercase font-bold text-gray-400 block">Ledger Stats</span>
-                  <span className="font-mono font-bold text-gray-200">
-                    {u.accountCount || 0} Wallets • {u.txCount || 0} Txns
-                  </span>
-                </div>
-
-                <div className="text-left md:text-right">
-                  <span className="text-[10px] uppercase font-bold text-gray-400 block">Last Active</span>
-                  <span className="font-mono text-purple-400 font-medium flex items-center gap-1">
-                    <Clock className="w-3 h-3 inline" /> {formatDate(u.lastActive)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

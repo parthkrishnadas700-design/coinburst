@@ -14,6 +14,7 @@ import type { Transaction } from './shared/useFinanceStore';
 import coinburstLogo from './assets/coinburst_logo.png';
 
 import { UpdatePromptModal } from './components/UpdatePromptModal';
+import { UserBannedSentinel } from './components/UserBannedSentinel';
 import { initNativeListeners, updateNativeStatusBar } from './shared/nativeBridge';
 import { initNotificationChannel, initLocalNotificationListeners, scheduleIntervalFinanceReminder } from './shared/nativeNotifications';
 
@@ -146,6 +147,7 @@ function MainApp() {
       )}
 
       <UpdatePromptModal />
+      <UserBannedSentinel />
     </div>
   );
 }
