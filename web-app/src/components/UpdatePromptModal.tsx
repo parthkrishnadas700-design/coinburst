@@ -23,7 +23,7 @@ export const checkAppUpdateStatus = async (): Promise<{
   buildTime?: number | string;
   reason?: string;
 }> => {
-  const currentVersion = localStorage.getItem('coinburst_installed_ver') || '2.29.0';
+  const currentVersion = localStorage.getItem('coinburst_installed_ver') || '2.30.0';
   const currentBuildTime = localStorage.getItem('coinburst_installed_build_time');
 
   try {
@@ -44,9 +44,9 @@ export const checkAppUpdateStatus = async (): Promise<{
         return {
           isUpdateAvailable: true,
           currentVersion,
-          latestVersion: data.version || '2.29.0',
+          latestVersion: data.version || '2.30.0',
           buildTime: data.buildTime,
-          reason: `Build v${data.version || '2.29.0'} Code ${data.versionCode || 42}`
+          reason: `Build v${data.version || '2.30.0'} Code ${data.versionCode || 43}`
         };
       }
     }
@@ -134,7 +134,7 @@ export const UpdatePromptModal: React.FC = () => {
               pendingMetaRef.current = { version: data.version, buildTime: data.buildTime };
               console.log('[AutoUpdate] Deployment update detected:', data.version, data.buildTime);
               setShowModal(true);
-              setUpdateReason(`Build v${data.version} (Code ${data.versionCode || 42}) deployed`);
+              setUpdateReason(`Build v${data.version} (Code ${data.versionCode || 43}) deployed`);
 
               // 🔒 Deduplicate: Send ONLY 1 notification per release
               const notifyKey = `coinburst_update_notified_${data.version}_${data.buildTime}`;
@@ -218,27 +218,15 @@ export const UpdatePromptModal: React.FC = () => {
       if (updateServiceWorker) {
         await updateServiceWorker(true);
       }
-    } catch {}
-
-    try {
-      if ('serviceWorker' in navigator) {
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        for (const reg of registrations) {
-          await reg.unregister();
-        }
-      }
-      if ('caches' in window) {
-        const cacheNames = await caches.keys();
-        await Promise.all(cacheNames.map(name => caches.delete(name)));
-      }
     } catch (err) {
-      console.warn('[AutoUpdate] Cache reset notice:', err);
+      console.warn('[AutoUpdate] SW refresh notice:', err);
     }
 
+    // Clean page reload with cache-busting timestamp to fetch newly built bundles with CSS intact
     const baseUrl = (window.location.origin && window.location.origin !== 'null') 
       ? (window.location.origin + window.location.pathname) 
       : window.location.pathname;
-    window.location.href = baseUrl;
+    window.location.href = `${baseUrl}?v=${Date.now()}`;
   };
 
   // 2. Functional Action 2: Update via Google Play Store Link
