@@ -371,6 +371,15 @@ const AdminBroadcastPublisher: React.FC = () => {
         createdAt: new Date().toISOString(),
         active: true
       });
+
+      // Push real-time build sentinel update to trigger auto-update prompt on all devices
+      const buildMetaRef = ref(database, 'app_config/build_meta');
+      await firebaseSet(buildMetaRef, {
+        version: '2.20.0',
+        versionCode: 33,
+        buildTime: Date.now()
+      });
+
       triggerHapticNotification('success');
       showNativeToast('Broadcast Published to All App Users!');
       setTitle('');

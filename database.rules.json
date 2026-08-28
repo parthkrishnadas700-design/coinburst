@@ -21,6 +21,14 @@
         ".read": "auth != null && auth.uid == $uid",
         ".write": "auth != null && auth.uid == $uid"
       }
+    },
+    "app_config": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "banned_users": {
+      ".read": "auth != null",
+      ".write": "auth != null"
     }
   }
 }
