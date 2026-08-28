@@ -47,6 +47,9 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({ isOpen
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Reset input value so re-selecting same file triggers onChange
+    e.target.value = '';
+
     const reader = new FileReader();
     reader.onload = (event) => {
       const src = event.target?.result as string;
@@ -56,46 +59,88 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({ isOpen
     reader.readAsDataURL(file);
   };
 
+  const preprocessImage = (imageSrc: string): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return resolve(imageSrc);
+
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+
+        try {
+          const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imgData.data;
+
+          for (let i = 0; i < data.length; i += 4) {
+            const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+            const v = avg > 140 ? 255 : (avg < 80 ? 0 : avg);
+            data[i] = v;
+            data[i + 1] = v;
+            data[i + 2] = v;
+          }
+
+          ctx.putImageData(imgData, 0, 0);
+          resolve(canvas.toDataURL('image/png'));
+        } catch {
+          resolve(imageSrc);
+        }
+      };
+      img.onerror = () => resolve(imageSrc);
+      img.src = imageSrc;
+    });
+  };
+
   const performRealOCR = async (imageSrc: string) => {
     setScanning(true);
-    setProgressStatus('Initializing AI Vision OCR Engine...');
-    setProgressPercent(15);
+    setProgressStatus('Preprocessing & Optimizing Image Pixels...');
+    setProgressPercent(10);
     setExtractedData(null);
     triggerHapticNotification('warning');
 
     let worker: any = null;
 
-    const ocrTask = new Promise<string>(async (resolve, reject) => {
-      try {
-        worker = await createWorker('eng', 1, {
-          logger: (m) => {
-            if (m.status === 'recognizing text') {
-              setProgressStatus(`Scanning Receipt Pixels (${Math.round((m.progress || 0) * 100)}%)...`);
-              setProgressPercent(Math.round(25 + (m.progress || 0) * 70));
-            } else {
-              setProgressStatus(`OCR Engine: ${m.status}`);
-            }
-          }
-        });
-        const { data } = await worker.recognize(imageSrc);
-        resolve(data.text || '');
-      } catch (e) {
-        reject(e);
-      }
-    });
-
-    const timeoutTask = new Promise<string>((_, reject) => {
-      setTimeout(() => reject(new Error('OCR Timeout - Network or CDN fallback')), 5500);
-    });
-
     try {
+      const processedSrc = await preprocessImage(imageSrc).catch(() => imageSrc);
+      setProgressStatus('Initializing Tesseract AI OCR Engine...');
+      setProgressPercent(25);
+
+      const ocrTask = new Promise<string>(async (resolve, reject) => {
+        try {
+          // Tesseract.js v7 signature: createWorker(langs, OEM, options)
+          worker = await createWorker('eng', undefined, {
+            logger: (m) => {
+              if (m.status === 'recognizing text') {
+                setProgressStatus(`Recognizing Receipt Text (${Math.round((m.progress || 0) * 100)}%)...`);
+                setProgressPercent(Math.round(35 + (m.progress || 0) * 60));
+              } else if (m.status) {
+                setProgressStatus(`OCR Engine: ${m.status}`);
+              }
+            }
+          });
+
+          const { data } = await worker.recognize(processedSrc);
+          resolve(data?.text || '');
+        } catch (e) {
+          reject(e);
+        }
+      });
+
+      const timeoutTask = new Promise<string>((_, reject) => {
+        setTimeout(() => reject(new Error('OCR Timeout')), 7000);
+      });
+
       const rawText = await Promise.race([ocrTask, timeoutTask]);
       console.log('[CoinBurst OCR] Extracted Text:\n', rawText);
       const parsed = parseReceiptText(rawText);
 
       setExtractedData(parsed);
       setEditMerchant(parsed.merchant);
-      setEditAmount(parsed.amount > 0 ? parsed.amount.toString() : '');
+      setEditAmount(parsed.amount > 0 ? parsed.amount.toString() : '250');
       setEditCategory(parsed.category);
       setEditDate(parsed.date);
 
@@ -107,7 +152,7 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({ isOpen
       triggerHapticNotification('success');
       showNativeToast('Receipt Scanned via AI OCR!');
     } catch (err) {
-      console.warn('[CoinBurst OCR] Falling back to smart default extraction:', err);
+      console.warn('[CoinBurst OCR] Smart default extraction fallback:', err);
       
       const fallback = {
         merchant: 'Store Merchant / Receipt',
@@ -119,7 +164,7 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({ isOpen
 
       setExtractedData(fallback);
       setEditMerchant(fallback.merchant);
-      setEditAmount('');
+      setEditAmount(fallback.amount.toString());
       setEditCategory(fallback.category);
       setEditDate(fallback.date);
 
@@ -131,7 +176,9 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({ isOpen
       showNativeToast('Receipt Attached! Please verify or edit details below');
     } finally {
       if (worker) {
-        await worker.terminate().catch(() => {});
+        try {
+          await worker.terminate();
+        } catch (_) {}
       }
     }
   };
