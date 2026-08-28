@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { database } from '../shared/firebase';
 import { ref, onValue, set as firebaseSet, update as firebaseUpdate, remove as firebaseRemove } from 'firebase/database';
 import { Users, Smartphone, Globe, RefreshCw, Search, Clock, Megaphone, Send, Trash2, UserX, CheckCircle2 } from 'lucide-react';
@@ -25,6 +25,8 @@ export const UserTelemetryPanel: React.FC = () => {
   const cStyles = useThemeStyles();
   const [users, setUsers] = useState<TelemetryUser[]>([]);
   const [bannedMap, setBannedMap] = useState<Record<string, boolean>>({});
+  const [bannedUsersList, setBannedUsersList] = useState<TelemetryUser[]>([]);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'banned'>('all');
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const currentUser = useFinanceStore(state => state.user);
@@ -81,14 +83,27 @@ export const UserTelemetryPanel: React.FC = () => {
       const val = snapshot.val();
       if (val) {
         const map: Record<string, boolean> = {};
+        const bList: TelemetryUser[] = [];
         Object.keys(val).forEach((uid) => {
           if (val[uid]?.banned) {
             map[uid] = true;
+            bList.push({
+              uid,
+              displayName: val[uid].displayName || 'Banned User',
+              email: val[uid].email || 'Access Revoked',
+              accountCount: 0,
+              txCount: 0,
+              totalBalance: 0,
+              lastActive: val[uid].bannedAt || new Date().toISOString(),
+              platform: 'Revoked Access'
+            });
           }
         });
         setBannedMap(map);
+        setBannedUsersList(bList);
       } else {
         setBannedMap({});
+        setBannedUsersList([]);
       }
     });
 
@@ -138,11 +153,39 @@ export const UserTelemetryPanel: React.FC = () => {
     }
   };
 
-  const filteredUsers = users.filter(u => 
-    u.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (u.platform && u.platform.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const allCombinedUsers = useMemo(() => {
+    const map = new Map<string, TelemetryUser>();
+    users.forEach(u => map.set(u.uid, u));
+    bannedUsersList.forEach(b => {
+      if (!map.has(b.uid)) {
+        map.set(b.uid, b);
+      }
+    });
+    return Array.from(map.values());
+  }, [users, bannedUsersList]);
+
+  const activeUserCount = useMemo(() => {
+    return allCombinedUsers.filter(u => !bannedMap[u.uid]).length;
+  }, [allCombinedUsers, bannedMap]);
+
+  const bannedUserCount = useMemo(() => {
+    return Object.keys(bannedMap).length;
+  }, [bannedMap]);
+
+  const filteredUsers = useMemo(() => {
+    return allCombinedUsers.filter(u => {
+      const isBanned = !!bannedMap[u.uid];
+      if (statusFilter === 'active' && isBanned) return false;
+      if (statusFilter === 'banned' && !isBanned) return false;
+
+      const term = searchTerm.toLowerCase();
+      return (
+        u.displayName.toLowerCase().includes(term) ||
+        u.email.toLowerCase().includes(term) ||
+        (u.platform && u.platform.toLowerCase().includes(term))
+      );
+    });
+  }, [allCombinedUsers, bannedMap, statusFilter, searchTerm]);
 
   const androidCount = users.filter(u => u.platform === 'Android App').length;
   const webCount = users.filter(u => u.platform !== 'Android App').length;
@@ -167,13 +210,13 @@ export const UserTelemetryPanel: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-lg font-black tracking-wide">Live User Telemetry & Active Users Directory</h3>
+              <h3 className="text-lg font-black tracking-wide">Live User Telemetry & Access Control</h3>
               <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-mono font-bold uppercase border border-emerald-500/20">
                 Admin Console
               </span>
             </div>
             <p className="text-xs text-gray-400 mt-0.5">
-              Live monitoring, access control, user revocation & remote broadcast.
+              Live monitoring, active vs revoked status sorting & user revocation.
             </p>
           </div>
         </div>
@@ -197,6 +240,51 @@ export const UserTelemetryPanel: React.FC = () => {
             🔒 Lock Console
           </button>
         </div>
+      </div>
+
+      {/* 🟢 Status Sorting & Filtering Options Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6 p-2 rounded-xl bg-black/40 border border-gray-800">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={() => setStatusFilter('all')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+              statusFilter === 'all'
+                ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
+                : 'text-gray-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            All Users ({allCombinedUsers.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter('active')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+              statusFilter === 'active'
+                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20'
+                : 'text-emerald-400 hover:bg-emerald-500/10'
+            }`}
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            Active Users ({activeUserCount})
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter('banned')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+              statusFilter === 'banned'
+                ? 'bg-red-600 text-white shadow-lg shadow-red-500/20'
+                : 'text-red-400 hover:bg-red-500/10'
+            }`}
+          >
+            <span className="w-2 h-2 rounded-full bg-red-400" />
+            Removed / Revoked ({bannedUserCount})
+          </button>
+        </div>
+
+        <span className="text-[11px] font-bold text-gray-400">
+          Showing <strong className="text-white">{filteredUsers.length}</strong> user records
+        </span>
       </div>
 
       {/* 📢 Admin Remote Broadcast Publisher */}

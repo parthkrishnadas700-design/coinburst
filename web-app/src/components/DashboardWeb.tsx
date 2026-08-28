@@ -639,11 +639,19 @@ export const DashboardWeb: React.FC<{
   const [showTermsModal, setShowTermsModal] = useState(false);
 
   useEffect(() => {
-    if (activePage === 'settings') {
+    // 🔒 Auto-lock Admin Telemetry Console whenever leaving Settings tab or switching page slides
+    if (activePage !== 'settings') {
+      useFinanceStore.getState().setIsAdminUnlocked(false);
+    } else {
       checkNotificationPermissions().then((granted) => {
         setNotifPermState(granted ? 'Granted' : 'Not Granted');
       });
     }
+
+    return () => {
+      // 🔒 Auto-lock Admin Console on unmount / slide leave
+      useFinanceStore.getState().setIsAdminUnlocked(false);
+    };
   }, [activePage]);
 
   // Profile editing

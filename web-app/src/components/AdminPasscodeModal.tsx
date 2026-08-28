@@ -25,6 +25,17 @@ export const AdminPasscodeModal: React.FC<AdminPasscodeModalProps> = ({ isOpen, 
     e.preventDefault();
     const clean = passcode.trim();
 
+    // 🔒 STRICT SECURITY ENFORCEMENT: Verify current logged-in user email
+    const currentUser = useFinanceStore.getState().user;
+    const isAdminEmail = currentUser?.email?.toLowerCase() === 'parthkrishnadas700@gmail.com';
+
+    if (!isAdminEmail) {
+      setError(true);
+      setErrorMsg('Access Denied: Admin Telemetry Console is strictly restricted to administrator account (parthkrishnadas700@gmail.com).');
+      triggerHapticNotification('error');
+      return;
+    }
+
     if (clean === 'cb1412' || clean === '1412') {
       setError(false);
       setErrorMsg('');
