@@ -73,17 +73,21 @@ export const signInWithGoogle = async () => {
         const credential = GoogleAuthProvider.credential(null, accessToken);
         const userCredential = await signInWithCredential(auth, credential);
         return userCredential.user;
+      } else {
+        throw new Error("No Google ID token received from device.");
       }
     } catch (nativeErr: any) {
-      console.warn("Native Google Auth error, attempting Firebase Web Auth fallback:", nativeErr);
+      console.error("Native Google Auth error:", nativeErr);
       const rawMsg = nativeErr?.message || nativeErr?.errorMessage || (typeof nativeErr === 'string' ? nativeErr : JSON.stringify(nativeErr));
-      if (rawMsg.includes('12501') || rawMsg.includes('cancel') || rawMsg.includes('CLOSED')) {
+      if (rawMsg.includes('12501') || rawMsg.includes('cancel') || rawMsg.includes('CLOSED') || rawMsg.includes('user canceled')) {
         throw new Error("Google Sign-In was cancelled.");
       }
+      // Never fall back to popup web browser in native APK!
+      throw new Error(rawMsg || "Google Sign-In failed on device.");
     }
   }
 
-  // Web Browser & Native Fallback (In-App Popup Auth with Redirect Fallback)
+  // Web Browser ONLY (In-App Popup Auth with Redirect Fallback for desktop/mobile browsers)
   try {
     const result = await signInWithPopup(auth, googleProvider);
     return result.user;
@@ -147,6 +151,13 @@ export const signInWithEmail = async (email: string, pass: string) => {
 
 export const signOutUser = async () => {
   try {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        await GoogleAuth.signOut();
+      } catch (e) {
+        console.warn("GoogleAuth signOut error:", e);
+      }
+    }
     await signOut(auth);
   } catch (error) {
     console.error("Sign-Out Error:", error);

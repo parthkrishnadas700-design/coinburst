@@ -7,8 +7,8 @@ android {
         applicationId "com.coinburst.app"
         minSdkVersion 22
         targetSdkVersion 36
-        versionCode 35
-        versionName "2.22.0"
+        versionCode 48
+        versionName "2.35.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

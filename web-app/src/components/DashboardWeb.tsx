@@ -738,7 +738,8 @@ export const DashboardWeb: React.FC<{
           setTheme,
           setCurrency,
           onNavigate,
-        }
+        },
+        newHistory
       );
 
       // Display the reply

@@ -28,6 +28,7 @@ const getOpenRouterKeys = (): string[] => {
 let currentKeyIndex = 0;
 
 export type AIResult = { text: string; action?: () => void };
+export type ChatMessage = { sender: 'user' | 'ai'; text: string };
 
 export const generateAIResponse = async (
   rawMessage: string,
@@ -43,7 +44,8 @@ export const generateAIResponse = async (
     setTheme: (t: any) => void;
     setCurrency: (c: string) => void;
     onNavigate: (p: any) => void;
-  }
+  },
+  chatHistory: ChatMessage[] = []
 ): Promise<AIResult> => {
   // Security: Sanitize user input to prevent prompt injection and XSS
   const message = sanitizeText(rawMessage, 500);
@@ -62,20 +64,20 @@ export const generateAIResponse = async (
           properties: {
             type: { type: Type.STRING, description: 'Must be "income" or "expense"' },
             amount: { type: Type.NUMBER, description: 'The monetary amount' },
-            category: { type: Type.STRING, description: 'Category (e.g. Food, Salary, Entertainment)' },
+            category: { type: Type.STRING, description: 'Category (e.g. Food, Salary, Entertainment, Bills)' },
             description: { type: Type.STRING, description: 'A short description of the transaction' },
-            accountId: { type: Type.STRING, description: 'Optional ID of the account. Leave null if not specified.' }
+            accountId: { type: Type.STRING, description: 'Optional ID of the account. Leave empty if not specified.' }
           },
           required: ['type', 'amount', 'category', 'description']
         }
       },
       {
         name: 'create_account',
-        description: 'Create a new financial account/wallet.',
+        description: 'Create a new financial account/wallet node.',
         parameters: {
           type: Type.OBJECT,
           properties: {
-            name: { type: Type.STRING, description: 'Name of the account (e.g. Chase Bank, Cash Wallet)' },
+            name: { type: Type.STRING, description: 'Name of the account (e.g. Chase Bank, Cash Wallet, HDFC)' },
             type: { type: Type.STRING, description: 'Must be "cash", "bank", or "credit"' },
             balance: { type: Type.NUMBER, description: 'Initial balance amount' }
           },
@@ -88,7 +90,7 @@ export const generateAIResponse = async (
         parameters: {
           type: Type.OBJECT,
           properties: {
-            category: { type: Type.STRING, description: 'Category (e.g. Food, Entertainment, Shopping)' },
+            category: { type: Type.STRING, description: 'Category (e.g. Food, Entertainment, Shopping, Bills)' },
             limit: { type: Type.NUMBER, description: 'The monthly limit amount' }
           },
           required: ['category', 'limit']
@@ -96,7 +98,7 @@ export const generateAIResponse = async (
       },
       {
         name: 'change_theme',
-        description: 'Change the application theme.',
+        description: 'Change the visual application theme.',
         parameters: {
           type: Type.OBJECT,
           properties: {
@@ -119,19 +121,42 @@ export const generateAIResponse = async (
     ]
   }];
 
-  const systemInstruction = `You are the CoinBurst Autonomous AI Advisor. You manage personal finances with precision.
-Whenever the user asks to add/log a transaction, create an account, set a budget, change the theme, or navigate, YOU MUST USE THE CORRESPONDING TOOL.
-Current Currency: ${currency}
-Current State Context:
-- Accounts: ${JSON.stringify(state.accounts.map(a => ({ id: a.id, name: a.name, type: a.type, balance: a.balance })))}
-- Recent Transactions (last 10): ${JSON.stringify(state.transactions.slice(0, 10).map(t => ({ id: t.id, type: t.type, amount: t.amount, category: t.category, description: t.description })))}
-- Active Budgets: ${JSON.stringify(state.budgets.map(b => ({ category: b.category, limit: b.limit, spent: b.spent })))}
+  const totalBalance = state.accounts.reduce((s, a) => s + (Number(a.balance) || 0), 0);
 
-Format your responses using clean Markdown. Be concise, helpful, and adopt a sleek financial advisor tone.`;
+  const systemInstruction = `You are Antigravity AI, the native, ultra-intelligent financial pair-programmer & personal wealth advisor inside CoinBurst.
+You communicate naturally, warmly, intelligently, and directly — just like an expert AI assistant pair-programming with the user.
+
+YOUR PERSONALITY & GUIDELINES:
+- **Natural & Conversational**: Respond like a top-tier AI assistant (clear, direct, structured markdown).
+- **Proactive & Smart**: When asked a question about spending, savings, net worth, budgets, or strategy, provide detailed, insightful, actionable advice based on the user's real live data.
+- **Action Execution**: When the user explicitly or implicitly requests an operational action (logging income/expenses, creating wallets, setting category budgets, changing themes, navigating screens), YOU MUST CALL THE CORRESPONDING TOOL.
+- **Context Awareness**: Utilize the full financial context (Accounts, Transactions, Budgets, Currency) provided below.
+
+Live Financial Workspace Context:
+- Active Currency: ${currency}
+- Total Net Worth: ${formatAmount(totalBalance, currency)}
+- Accounts & Wallets: ${JSON.stringify(state.accounts.map(a => ({ id: a.id, name: a.name, type: a.type, balance: a.balance })))}
+- Recent Transactions (last 15): ${JSON.stringify(state.transactions.slice(0, 15).map(t => ({ id: t.id, type: t.type, amount: t.amount, category: t.category, description: t.description, date: t.date })))}
+- Active Category Budgets: ${JSON.stringify(state.budgets.map(b => ({ category: b.category, limit: b.limit, spent: b.spent })))}
+`;
+
+  // Build conversation history contents for Gemini API
+  const conversationContents: any[] = [];
+  const recentHistory = chatHistory.slice(-6);
+  for (const h of recentHistory) {
+    conversationContents.push({
+      role: h.sender === 'user' ? 'user' : 'model',
+      parts: [{ text: h.text }]
+    });
+  }
+  conversationContents.push({
+    role: 'user',
+    parts: [{ text: message }]
+  });
 
   let lastError: any = null;
 
-  // 1. Attempt Gemini Provider Keys (gemini-2.5-flash -> gemini-1.5-flash)
+  // 1. Attempt Gemini Provider Keys (gemini-2.5-flash -> gemini-2.0-flash -> gemini-1.5-flash)
   if (geminiKeys.length > 0) {
     const totalKeys = geminiKeys.length;
     for (let attempt = 0; attempt < totalKeys; attempt++) {
@@ -139,16 +164,16 @@ Format your responses using clean Markdown. Be concise, helpful, and adopt a sle
       const apiKey = geminiKeys[keyIdx];
       const ai = new GoogleGenAI({ apiKey });
 
-      const geminiModels = ['gemini-2.5-flash', 'gemini-1.5-flash'];
+      const geminiModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
       for (const modelName of geminiModels) {
         try {
           const response = await ai.models.generateContent({
             model: modelName,
-            contents: message,
+            contents: conversationContents as any,
             config: {
               tools: tools as any,
               systemInstruction: systemInstruction,
-              temperature: 0.2,
+              temperature: 0.3,
             }
           });
 

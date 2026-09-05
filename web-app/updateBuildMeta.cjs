@@ -7,8 +7,8 @@ const metaPath = path.join(__dirname, 'public', 'build-meta.json');
 const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
 
 const meta = {
-  version: pkg.version || '2.32.0',
-  versionCode: 45,
+  version: pkg.version || '2.35.0',
+  versionCode: 48,
   buildTime: Date.now(),
   timestamp: new Date().toISOString(),
   appName: 'CoinBurst Wealth Hub'
