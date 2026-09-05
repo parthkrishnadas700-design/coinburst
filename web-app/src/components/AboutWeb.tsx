@@ -27,7 +27,7 @@ export const AboutWeb: React.FC = () => {
   const [tapCount, setTapCount] = useState(0);
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
-  const currentVer = localStorage.getItem('coinburst_installed_ver') || '2.35.0';
+  const currentVer = localStorage.getItem('coinburst_installed_ver') || '2.36.0';
 
   const handleManualCheck = async () => {
     setCheckingUpdate(true);
