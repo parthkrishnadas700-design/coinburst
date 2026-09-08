@@ -57,17 +57,17 @@ export const TermsModal: React.FC<TermsModalProps> = ({ isOpen, onClose }) => {
                 <span className="text-emerald-400 font-mono">01.</span> Acceptance of Terms
               </h4>
               <p>
-                By creating an account, authenticating via Google Identity, or accessing the CoinBurst application, you agree to comply with and be bound by these Terms of Service and Privacy Policy. If you do not agree to these terms, you may not use the application.
+                By creating a session, entering as a guest, or accessing the CoinBurst application, you agree to comply with and be bound by these Terms of Service and Privacy Policy. If you do not agree to these terms, you may not use the application.
               </p>
             </div>
 
             {/* Section 2 */}
             <div className="space-y-2">
               <h4 className="text-sm font-black text-white flex items-center gap-2">
-                <span className="text-cyan-400 font-mono">02.</span> User Account & Google Identity Authentication
+                <span className="text-cyan-400 font-mono">02.</span> User Account & Authentication
               </h4>
               <p>
-                CoinBurst provides seamless authentication via Google OAuth 2.0 and Email/Password credentials. When signing in with Google, we receive only basic profile information (such as your display name, email address, and profile photo) to establish your account vault node.
+                CoinBurst provides frictionless guest authentication. When entering the vault, an encrypted anonymous session token is created to establish your private vault node without storing passwords or social credentials.
               </p>
             </div>
 

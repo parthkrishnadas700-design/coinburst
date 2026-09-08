@@ -7,7 +7,7 @@ import { AddTransactionWeb } from './components/AddTransactionWeb';
 import { Layout } from './pages/Layout';
 import { Dashboard } from './pages/Dashboard';
 import { WelcomeScreen } from './components/WelcomeScreen';
-import { auth, handleGoogleRedirectResult } from './shared/firebase';
+import { auth } from './shared/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useFinanceStore } from './shared/useFinanceStore';
 import type { Transaction } from './shared/useFinanceStore';
@@ -54,27 +54,10 @@ function MainApp() {
           selectedTheme: useFinanceStore.getState().theme,
         });
         processRecurringTransactions?.();
-        setAuthReady(true);
       } else {
-        handleGoogleRedirectResult().then((redirectUser) => {
-          if (redirectUser) {
-            setUser({
-              uid: redirectUser.uid,
-              email: redirectUser.email || '',
-              displayName: redirectUser.displayName || 'Wealth Builder',
-              photoURL: redirectUser.photoURL || undefined,
-              selectedTheme: useFinanceStore.getState().theme,
-            });
-            processRecurringTransactions?.();
-          } else {
-            setUser(null);
-          }
-          setAuthReady(true);
-        }).catch(() => {
-          setUser(null);
-          setAuthReady(true);
-        });
+        setUser(null);
       }
+      setAuthReady(true);
     });
     return () => unsubscribe();
   }, [setUser, processRecurringTransactions]);

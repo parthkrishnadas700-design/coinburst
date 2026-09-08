@@ -3,13 +3,9 @@ import {
   getAuth, 
   signOut,
   updateProfile,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  GoogleAuthProvider,
-  signInWithCredential
+  signInAnonymously
 } from "firebase/auth";
 import { getDatabase } from "firebase/database";
-import { GoogleSignin } from "@react-native-google-signin/google-signin";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAsGuc2CyNEoGk1ToTxU6p4U0iLK81XUmY",
@@ -27,43 +23,16 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const database = getDatabase(app);
 
-// Configure Google Sign-In with Web Client ID from google-services.json
-GoogleSignin.configure({
-  webClientId: "44180464714-49os9013g7k1vrbru6nhr3grmpd0hd10.apps.googleusercontent.com",
-  offlineAccess: true,
-});
-
-export const signUpWithEmail = async (email: string, pass: string, name: string) => {
-  const result = await createUserWithEmailAndPassword(auth, email, pass);
-  await updateProfile(result.user, { displayName: name });
+// 1-Click Anonymous / Guest Sign-In
+export const signInAsGuest = async (displayName?: string) => {
+  const result = await signInAnonymously(auth);
+  const resolvedName = displayName?.trim() || "Wealth Builder";
+  await updateProfile(result.user, { displayName: resolvedName });
   return result.user;
-};
-
-export const signInWithEmail = async (email: string, pass: string) => {
-  const result = await signInWithEmailAndPassword(auth, email, pass);
-  return result.user;
-};
-
-export const signInWithGoogle = async () => {
-  await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-  const response = await GoogleSignin.signIn();
-  const idToken = response.data?.idToken || (response as any).idToken;
-  if (!idToken) {
-    throw new Error('Google Sign-In failed: No ID Token retrieved');
-  }
-  const credential = GoogleAuthProvider.credential(idToken);
-  const userCredential = await signInWithCredential(auth, credential);
-  return userCredential.user;
 };
 
 export const signOutUser = async () => {
-  try {
-    await GoogleSignin.signOut();
-  } catch (e) {
-    // Ignore if not signed in with Google
-  }
   await signOut(auth);
 };
 
 export { updateProfile };
-

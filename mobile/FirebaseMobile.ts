@@ -1,39 +1,14 @@
 /**
  * Firebase Mobile Integration Module for CoinBurst (React Native)
  * 
- * This module demonstrates how to configure Firebase Authentication (Google Login),
+ * This module demonstrates how to configure Firebase Authentication (Guest Login),
  * Realtime Database syncing, and profile management for the React Native application.
  * It uses the same Firebase project configuration as the web application.
- * 
- * -----------------------------------------------------------------------------
- * PREREQUISITES & INSTALLATION:
- * 1. Install React Native Firebase core and services:
- *    npm install @react-native-firebase/app @react-native-firebase/auth @react-native-firebase/database
- * 
- * 2. Install Google Sign-In for React Native:
- *    npm install @react-native-google-signin/google-signin
- * 
- * 3. Android Setup:
- *    - Add your android/app/google-services.json from the Firebase Console.
- *    - Add the Google Services plugin to your android/build.gradle and android/app/build.gradle.
- * 
- * 4. iOS Setup:
- *    - Add your ios/GoogleService-Info.plist from the Firebase Console.
- *    - Run: cd ios && pod install
- * -----------------------------------------------------------------------------
  */
 
-import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import auth from '@react-native-firebase/auth';
 import database from '@react-native-firebase/database';
 import { useFinanceStore } from '../shared/useFinanceStore';
-
-// Initialize Google Sign-In
-GoogleSignin.configure({
-  // Web Client ID from your Firebase Console -> Authentication -> Sign-in Method -> Google
-  webClientId: '44180464714-ol7bch8om2m5f2a15o4vdtv9j81v8sbi.apps.googleusercontent.com', // Replace with your Google OAuth client ID
-  offlineAccess: true,
-});
 
 /**
  * Interface representing the authenticated mobile user
@@ -46,33 +21,27 @@ export interface MobileUserProfile {
 }
 
 /**
- * 1. Trigger Google Sign-In on Mobile
+ * 1. Trigger 1-Click Guest Sign-In on Mobile
  */
-export const signInWithGoogleMobile = async (): Promise<MobileUserProfile | null> => {
+export const signInAsGuestMobile = async (displayName?: string): Promise<MobileUserProfile | null> => {
   try {
-    // Check if device has Google Play Services available (Android only)
-    await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-    
-    // Get the users ID token
-    const { idToken } = await GoogleSignin.signIn();
-
-    // Create a Google credential with the token
-    const googleCredential = auth.GoogleAuthProvider.credential(idToken);
-
-    // Sign-in the user with the credential
-    const userCredential = await auth().signInWithCredential(googleCredential);
+    const userCredential = await auth().signInAnonymously();
     const user = userCredential.user;
 
     if (user) {
+      const resolvedName = displayName?.trim() || 'Wealth Builder';
+      await user.updateProfile({
+        displayName: resolvedName,
+      });
+
       const profile: MobileUserProfile = {
         uid: user.uid,
         email: user.email || '',
-        displayName: user.displayName || 'Wealth Builder',
+        displayName: resolvedName,
         photoURL: user.photoURL || undefined,
       };
 
       // Sync user profile state with local Zustand store
-      // Since useFinanceStore is shared, we use the exact same action:
       await useFinanceStore.getState().setUser({
         ...profile,
         selectedTheme: useFinanceStore.getState().theme,
@@ -86,15 +55,7 @@ export const signInWithGoogleMobile = async (): Promise<MobileUserProfile | null
     
     return null;
   } catch (error: any) {
-    if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-      console.log('Google Login: User cancelled the login flow.');
-    } else if (error.code === statusCodes.IN_PROGRESS) {
-      console.log('Google Login: Login is already in progress.');
-    } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-      console.error('Google Login: Play services not available or outdated.');
-    } else {
-      console.error('Google Login Error:', error);
-    }
+    console.error('Mobile Guest Sign-In Error:', error);
     throw error;
   }
 };
@@ -104,7 +65,6 @@ export const signInWithGoogleMobile = async (): Promise<MobileUserProfile | null
  */
 export const signOutMobileUser = async () => {
   try {
-    await GoogleSignin.signOut();
     await auth().signOut();
     // Clear Zustand store user session
     await useFinanceStore.getState().setUser(null);
@@ -164,28 +124,6 @@ export const syncFirebaseToMobileStore = async (uid: string) => {
 
 /**
  * 4. Push Mobile State Modifications to Firebase Realtime Database
- * 
- * Call this helper inside your mobile action interceptors, or subscribe to store 
- * changes in your React Native App entry point:
- * 
- * useEffect(() => {
- *   const unsubscribe = useFinanceStore.subscribe(
- *     (state) => state,
- *     (state) => {
- *       if (state.user) {
- *         saveMobileStateToFirebase(
- *           state.user.uid, 
- *           state.accounts, 
- *           state.transactions, 
- *           state.budgets, 
- *           state.theme,
- *           state.currency
- *         );
- *       }
- *     }
- *   );
- *   return () => unsubscribe();
- * }, []);
  */
 export const saveMobileStateToFirebase = async (
   uid: string,
