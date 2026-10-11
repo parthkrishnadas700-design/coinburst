@@ -44,7 +44,7 @@ export const TermsPage: React.FC = () => {
               Terms of Service & Privacy Policy
             </h2>
             <p className="text-sm text-gray-300 max-w-2xl leading-relaxed">
-              This document governs your use of the CoinBurst Wealth Hub application, cloud data synchronization services, local notification engine, and encrypted session management.
+              This document governs your use of the CoinBurst Wealth Hub application, cloud data synchronization services, local notification engine, and Google Identity authentication integration.
             </p>
             <div className="pt-2 flex flex-wrap gap-4 text-xs font-mono text-gray-400">
               <span>Effective Date: August 17, 2026</span>
@@ -65,7 +65,7 @@ export const TermsPage: React.FC = () => {
             <h3 className="text-xl font-bold font-['Poppins']">1. Privacy Policy & Financial Data Protection</h3>
           </div>
           <p className="text-sm text-gray-300 leading-relaxed">
-            CoinBurst takes user data privacy with paramount seriousness. Your financial ledgers, account balances, monthly budgets, and custom expense tags are stored locally on your device and synchronized securely to private cloud databases managed via Firebase Realtime Database.
+            CoinBurst takes user data privacy with paramount seriousness. Your financial ledgers, account balances, monthly budgets, and custom expense tags are stored locally on your device and synchronized securely to private cloud databases managed via Google Firebase Realtime Database.
           </p>
           <ul className="space-y-2.5 text-xs text-gray-300 pt-2">
             <li className="flex items-start gap-2.5">
@@ -83,25 +83,26 @@ export const TermsPage: React.FC = () => {
           </ul>
         </section>
 
-        {/* Section 2: Guest Authentication */}
+        {/* Section 2: Google Identity Authentication */}
         <section className="space-y-4 p-6 rounded-2xl bg-white/[0.03] border border-white/10">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
               <Globe className="w-5 h-5" />
             </div>
-            <h3 className="text-xl font-bold font-['Poppins']">2. Guest Access & Session Authentication</h3>
+            <h3 className="text-xl font-bold font-['Poppins']">2. Google Sign-In & Authentication</h3>
           </div>
           <p className="text-sm text-gray-300 leading-relaxed">
-            CoinBurst uses frictionless anonymous session authentication. No external passwords or third-party credentials are required to use the application.
+            When authenticating via Google Identity, CoinBurst uses standard OAuth 2.0 protocols to verify your identity.
           </p>
           <div className="p-4 rounded-xl bg-black/40 border border-white/5 space-y-2 text-xs text-gray-300">
-            <p className="font-semibold text-white">Vault Node Information:</p>
+            <p className="font-semibold text-white">Information Requested from Google Account:</p>
             <ul className="list-disc pl-5 space-y-1 text-gray-400">
-              <li>Anonymized session identifier (for private cloud data mapping and realtime synchronization)</li>
-              <li>Optional chosen Display Name (for personalized app interface and greetings)</li>
+              <li>Primary email address (for account identification and cloud data mapping)</li>
+              <li>Display Name (for personalized app greeting and account nodes)</li>
+              <li>Profile Picture URL (for user avatar display)</li>
             </ul>
             <p className="text-[11px] text-cyan-300 pt-1">
-              ✓ No social account access, email tracking, or third-party OAuth permissions are requested.
+              ✓ We do NOT request access to your Google Drive, Gmail messages, contacts, or financial accounts.
             </p>
           </div>
         </section>

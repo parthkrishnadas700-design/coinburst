@@ -1,25 +1,60 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, ActivityIndicator, Modal } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { signInAsGuest } from '../shared/firebase';
+import { signInWithEmail, signUpWithEmail, signInWithGoogle } from '../shared/firebase';
 
 export const LoginScreen: React.FC = () => {
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
-  const handleGuestEntry = async () => {
+  const handleSubmit = async () => {
+    if (!email || !password) return Alert.alert('Error', 'Please fill in all fields');
+    if (isSignUp && !name) return Alert.alert('Error', 'Please enter your name');
     setLoading(true);
     try {
-      await signInAsGuest(name.trim() || 'Wealth Builder');
+      if (isSignUp) {
+        await signUpWithEmail(email, password, name);
+      } else {
+        await signInWithEmail(email, password);
+      }
     } catch (e: any) {
-      Alert.alert('Access Error', e.message || 'Failed to enter vault. Please try again.');
-    } finally {
-      setLoading(false);
+      Alert.alert('Auth Error', e.message || 'Something went wrong');
     }
+    setLoading(false);
+  };
+
+  const handleGoogleAuth = async () => {
+    setGoogleLoading(true);
+    try {
+      await signInWithGoogle();
+    } catch (e: any) {
+      if (e.code !== 'ASYNC_OP_IN_PROGRESS' && e.code !== '12501') {
+        Alert.alert('Google Sign-In Error', e.message || 'Failed to sign in with Google');
+      }
+    }
+    setGoogleLoading(false);
   };
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {/* Non-touchable Connecting Overlay */}
+      <Modal visible={googleLoading} transparent animationType="fade">
+        <View style={styles.modalOverlay} pointerEvents="auto">
+          <LinearGradient colors={['#FF007F', '#00FF88', '#00E5FF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.logoGradient}>
+            <View style={styles.logoInner}>
+              <Text style={styles.logoText}>CB</Text>
+            </View>
+          </LinearGradient>
+          <ActivityIndicator size="large" color="#00FF88" style={{ marginTop: 24 }} />
+          <Text style={styles.connectingTitle}>Connecting to Google...</Text>
+          <Text style={styles.connectingSubtitle}>Please wait, establishing secure vault access...</Text>
+        </View>
+      </Modal>
+
       <View style={styles.inner}>
         <LinearGradient colors={['#FF007F', '#00FF88', '#00E5FF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.logoGradient}>
           <View style={styles.logoInner}>
@@ -30,33 +65,65 @@ export const LoginScreen: React.FC = () => {
         <Text style={styles.title}>CoinBurst</Text>
         <Text style={styles.subtitle}>Your Financial Nexus</Text>
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Unlock Your Vault</Text>
-          <Text style={styles.cardSubtitle}>Direct guest access • Real-time cloud sync</Text>
+        {/* Prominent Google Sign-In Button on TOP */}
+        <TouchableOpacity 
+          onPress={handleGoogleAuth} 
+          disabled={loading || googleLoading} 
+          style={styles.googleBtn} 
+          activeOpacity={0.8}
+        >
+          <View style={styles.googleBtnContent}>
+            <View style={styles.googleIconBadge}>
+              <Text style={styles.googleIconText}>G</Text>
+            </View>
+            <Text style={styles.googleBtnText}>Continue with Google</Text>
+          </View>
+        </TouchableOpacity>
 
+        <View style={styles.dividerContainer}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>OR</Text>
+          <View style={styles.dividerLine} />
+        </View>
+
+        {isSignUp && (
           <TextInput
             style={styles.input}
-            placeholder="Operative Name (e.g. Wealth Builder)"
+            placeholder="Full Name"
             placeholderTextColor="#4B5563"
             value={name}
             onChangeText={setName}
-            autoCapitalize="words"
           />
+        )}
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          placeholderTextColor="#4B5563"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          placeholderTextColor="#4B5563"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
 
-          <TouchableOpacity onPress={handleGuestEntry} disabled={loading} activeOpacity={0.8} style={{ width: '100%' }}>
-            <LinearGradient colors={['#00FF88', '#00E5FF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.btn}>
-              {loading ? (
-                <ActivityIndicator color="#07050F" />
-              ) : (
-                <Text style={styles.btnText}>Enter Vault as Guest</Text>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
+        <TouchableOpacity onPress={handleSubmit} disabled={loading || googleLoading} activeOpacity={0.8}>
+          <LinearGradient colors={['#FF007F', '#00FF88']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.btn}>
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>{isSignUp ? 'Create Account' : 'Sign In'}</Text>}
+          </LinearGradient>
+        </TouchableOpacity>
 
-          <Text style={styles.footerNote}>
-            No passwords or external accounts required. An encrypted ledger will be established for this device.
+        <TouchableOpacity onPress={() => setIsSignUp(!isSignUp)} style={{ marginTop: 24 }}>
+          <Text style={styles.toggleText}>
+            {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
           </Text>
-        </View>
+        </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
@@ -64,37 +131,27 @@ export const LoginScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#07050F' },
-  inner: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
+  inner: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(7, 5, 15, 0.95)', justifyContent: 'center', alignItems: 'center', padding: 24 },
+  connectingTitle: { fontSize: 20, fontWeight: '900', color: '#FFF', marginTop: 16 },
+  connectingSubtitle: { fontSize: 12, color: '#9CA3AF', marginTop: 6, textAlign: 'center' },
   logoGradient: { width: 80, height: 80, borderRadius: 20, padding: 3 },
   logoInner: { flex: 1, backgroundColor: '#0B0B0F', borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
   logoText: { fontSize: 32, fontWeight: '900', color: '#fff' },
   title: { fontSize: 28, fontWeight: '900', color: '#fff', marginTop: 16 },
   subtitle: { fontSize: 12, color: '#9CA3AF', letterSpacing: 3, textTransform: 'uppercase', marginTop: 4, marginBottom: 28 },
-  card: {
-    width: '100%',
-    maxWidth: 340,
-    backgroundColor: '#0F0C20',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 20,
-    padding: 24,
-    alignItems: 'center',
-  },
-  cardTitle: { fontSize: 18, fontWeight: '800', color: '#FFFFFF', marginBottom: 4 },
-  cardSubtitle: { fontSize: 11, color: '#9CA3AF', marginBottom: 20, textAlign: 'center' },
-  input: { 
-    width: '100%', 
-    backgroundColor: '#07050F', 
-    borderWidth: 1, 
-    borderColor: '#1E1E26', 
-    borderRadius: 12, 
-    paddingHorizontal: 16, 
-    paddingVertical: 14, 
-    color: '#fff', 
-    fontSize: 14, 
-    marginBottom: 16 
-  },
-  btn: { width: '100%', paddingVertical: 16, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  btnText: { color: '#07050F', fontWeight: '900', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1.5 },
-  footerNote: { fontSize: 10, color: '#6B7280', textAlign: 'center', marginTop: 16, lineHeight: 15 },
+  input: { width: '100%', backgroundColor: '#0B0B0F', borderWidth: 1, borderColor: '#1E1E26', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, color: '#fff', fontSize: 14, marginBottom: 12 },
+  btn: { width: 280, paddingVertical: 16, borderRadius: 12, alignItems: 'center' },
+  btnText: { color: '#fff', fontWeight: '900', fontSize: 14, textTransform: 'uppercase', letterSpacing: 2 },
+  dividerContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 20, width: '100%' },
+  dividerLine: { flex: 1, height: 1, backgroundColor: '#1E1E26' },
+  dividerText: { color: '#6B7280', fontSize: 12, fontWeight: '700', marginHorizontal: 12 },
+  googleBtn: { width: 280, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#FFFFFF', paddingVertical: 14, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
+  googleBtnContent: { flexDirection: 'row', alignItems: 'center' },
+  googleIconBadge: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#EA4335', alignItems: 'center', justifyContent: 'center', marginRight: 10 },
+  googleIconText: { color: '#FFFFFF', fontWeight: '900', fontSize: 14 },
+  googleBtnText: { color: '#000000', fontWeight: '900', fontSize: 14, textTransform: 'uppercase' },
+  toggleText: { color: '#00FF88', fontSize: 13, fontWeight: '600' },
 });
+
+
