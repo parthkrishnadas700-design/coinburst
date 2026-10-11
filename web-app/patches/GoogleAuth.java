@@ -134,7 +134,8 @@ public class GoogleAuth extends Plugin {
       if (SIGN_IN_CANCELLED == e.getStatusCode()) {
         call.reject("The user canceled the sign-in flow.", "" + e.getStatusCode());
       } else {
-        call.reject("Something went wrong", "" + e.getStatusCode());
+        String statusStr = com.google.android.gms.common.api.CommonStatusCodes.getStatusCodeString(e.getStatusCode());
+        call.reject("Google Sign-In failed (Code " + e.getStatusCode() + ": " + statusStr + ")", "" + e.getStatusCode());
       }
     }
   }
